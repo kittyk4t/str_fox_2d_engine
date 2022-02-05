@@ -70,3 +70,63 @@ on_collision () ->
 
 abstract on collision method
 */
+use serde;
+use serde::Deserialize;
+use serde_json;
+
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+enum Team
+{
+    Good,
+    Bad,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+enum DisplayType
+{
+    Preview,
+    Lives,
+    TextBox,
+}
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+enum EntityType {
+Player,
+Enemy,
+Projectile(Team),
+Display,
+Background,
+}
+
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+struct Texture{
+    index: usize,
+    postion: Vec2,
+    size: Vec2,
+    is_visible: bool,
+}
+
+pub trait Colliable
+{
+   fn on_collison(&self) ; 
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+struct HurtBox{
+    position: Vec2,
+    size: Vec2,
+    collision_layer: usize,
+    check_collison: bool,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+struct Entity{
+    ent_type: EntityType,
+    positon: Vec2,
+    vel: Vec2,
+    hurt_box: HurtBox,
+    texture: Texture,
+}
+
+
+
