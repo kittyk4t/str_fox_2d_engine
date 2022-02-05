@@ -11,3 +11,10 @@ members = [
         "game_1",
         "game_2",
 ]
+
+[dependencies]
+vulkano = "0.27.1"
+vulkano-shaders = "0.27.1"
+winit = "0.25"
+vulkano-win = "0.27.1"
+png = "0.17"
