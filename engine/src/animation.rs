@@ -31,3 +31,51 @@ to render
 main functionally
 puts on screen
 */
+use png;
+use std::sync::Arc;
+use serde;
+use serde::Deserialize;
+use serde_json;
+use std::fs;
+use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess};
+use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents};
+use vulkano::descriptor_set::PersistentDescriptorSet;
+use vulkano::device::physical::{PhysicalDevice, PhysicalDeviceType};
+use vulkano::device::{Device, DeviceExtensions, Features};
+use vulkano::format::Format;
+use vulkano::image::ImageCreateFlags;
+use vulkano::image::{
+    view::ImageView, ImageAccess, ImageDimensions, ImageUsage, StorageImage, SwapchainImage,
+};
+use vulkano::instance::Instance;
+use vulkano::pipeline::graphics::input_assembly::InputAssemblyState;
+use vulkano::pipeline::graphics::vertex_input::BuffersDefinition;
+use vulkano::pipeline::graphics::viewport::{Viewport, ViewportState};
+use vulkano::pipeline::{GraphicsPipeline, Pipeline, PipelineBindPoint};
+use vulkano::render_pass::{Framebuffer, RenderPass, Subpass};
+use vulkano::sampler::{Filter, MipmapMode, Sampler, SamplerAddressMode};
+use vulkano::swapchain::{self, AcquireError, Swapchain, SwapchainCreationError};
+use vulkano::sync::{self, FlushError, GpuFuture};
+use vulkano::Version;
+use vulkano_win::VkSurfaceBuild;
+
+struct Spritesheet{
+    sheet: Vec,
+    sprites: Vec<Sprite>,
+}
+
+struct Sprite{
+    index: usize,
+    dimensions: ImageDimensions::Dim2d, 
+}
+
+struct Animation{
+    sprite_sheet: SpriteSheet,
+    entities: Vec<Entity>,
+}
+
+/*
+need to figure out what can be shared and what needs to be seperate
+need ot set up pipeline
+goal: create animation and it can jsut draw based on the entities
+*/
