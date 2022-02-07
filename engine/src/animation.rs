@@ -59,19 +59,48 @@ use vulkano::sync::{self, FlushError, GpuFuture};
 use vulkano::Version;
 use vulkano_win::VkSurfaceBuild;
 
+struct Animation{
+    
+}
+struct AnimationState
+{
+
+}
 struct Spritesheet{
     sheet: Vec,
     sprites: Vec<Sprite>,
 }
 
 struct Sprite{
-    index: usize,
+    id: usize,
     dimensions: ImageDimensions::Dim2d, 
+    animations: Vec<Animation>,
+    state: AnimationState,
 }
 
-struct Animation{
+/*
+gets rendered */
+struct Plate{
     sprite_sheet: SpriteSheet,
     entities: Vec<Entity>,
+}
+
+impl Plate{
+    
+    pub fn new(sheet: File, data: File, entites: Vec<Entity)
+    {
+        Plate{load_sheet(sheet, data), entities}
+    }
+    /*
+    loads sprite sheet and data about how sheet is divided into sprites
+    */
+    fn load_sheet(sheet: File, data: File) -> SpriteSheet
+    {
+
+    }
+
+    
+
 }
 
 /*
