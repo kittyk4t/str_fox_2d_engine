@@ -10,6 +10,7 @@ members = [
         "engine",
         "game_1",
         "game_2",
+        "animation_lab",
 ]
 
 [dependencies]
