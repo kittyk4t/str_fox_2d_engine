@@ -93,9 +93,13 @@ struct Sprite{
 /*
 gets rendered */
 struct Plate{
+    plate: Image;
     sprite_sheet: SpriteSheet, //sprite sheet
     entities: Vec<Entity>, //list of entities, gives positions and can trigger animations
     cur_frame: usize, //current frame
+    dimensions: 
+    pipleline: 
+    swapchain: 
 }
 
 impl Plate{
@@ -111,11 +115,11 @@ impl Plate{
     {
 
     }
-
-    
-
 }
 
+struct Render{
+
+}
 /*
 need to figure out what can be shared and what needs to be seperate
 need ot set up pipeline
