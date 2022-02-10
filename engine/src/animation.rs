@@ -71,7 +71,7 @@ struct Animation{
     is_active: bool, //if animation has been triggered
     priority: usize, //priority of animation
     timing: Vec<usize>, //how many frames each pose is held 
-    frame_triggered: usize, //frame from plate
+    frame_triggered: usize, //frame from plate when triggered
     cur_pose: usize, //index of poses
     cycle: bool, //animation is looping or non-looping (aka a cycle or not)
 
