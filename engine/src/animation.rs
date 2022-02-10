@@ -59,37 +59,50 @@ use vulkano::sync::{self, FlushError, GpuFuture};
 use vulkano::Version;
 use vulkano_win::VkSurfaceBuild;
 
-struct Animation{
-    
+struct Color [u8, u8, u8, u8]; 
+
+struct Image{
+    pixels:Box<[Color]>,
+    width:usize,
+    height:usize,
 }
-struct AnimationState
-{
+struct Animation{
+    pose: Vec<Image>, //images that make up the animation
+    is_active: bool, //if animation has been triggered
+    priority: usize, //priority of animation
+    timing: Vec<usize>, //how many frames each pose is held 
+    frame_triggered: usize, //frame from plate
+    cur_pose: usize, //index of poses
+    cycle: bool, //animation is looping or non-looping (aka a cycle or not)
 
 }
+
 struct Spritesheet{
-    sheet: Vec,
-    sprites: Vec<Sprite>,
+    sheet: Image, //main image, all sprites and animations
+    sprites: Vec<Sprite>, //indiviual sprites in sheet
 }
 
 struct Sprite{
     id: usize,
-    dimensions: ImageDimensions::Dim2d, 
     animations: Vec<Animation>,
-    state: AnimationState,
+    default_animation: usize,
+    animation_layer: usize,
+    active_animation: Vec<usize>, 
 }
 
 /*
 gets rendered */
 struct Plate{
-    sprite_sheet: SpriteSheet,
-    entities: Vec<Entity>,
+    sprite_sheet: SpriteSheet, //sprite sheet
+    entities: Vec<Entity>, //list of entities, gives positions and can trigger animations
+    cur_frame: usize, //current frame
 }
 
 impl Plate{
     
     pub fn new(sheet: File, data: File, entites: Vec<Entity)
     {
-        Plate{load_sheet(sheet, data), entities}
+        Plate{load_sheet(sheet, data), entities, cur_frame = 0}
     }
     /*
     loads sprite sheet and data about how sheet is divided into sprites
