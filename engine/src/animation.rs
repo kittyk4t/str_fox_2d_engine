@@ -59,6 +59,7 @@ use vulkano::sync::{self, FlushError, GpuFuture};
 use vulkano::Version;
 use vulkano_win::VkSurfaceBuild;
 
+#[derive(Clone, Copy)]
 struct Color{
     r: u8,
     g: u8,
@@ -83,6 +84,7 @@ impl Color{
     }
 }
 
+#[derive(Clone, Copy)]
 struct Image{
     pixels:Vec<Color>,
     width:usize,
@@ -115,7 +117,10 @@ impl Image{
         Image{pixels:color_image, width:info.width, height:info.height}
     }
 
-    fn background (size:Vec2)
+    /**
+     * creates an image of the given size which is just the default color
+     */
+    fn background (size:Vec2)-> Image
     {
         let mut color_image = Vec::new();
        
@@ -125,6 +130,22 @@ impl Image{
        color_image
     }
 
+    /**
+     * creates an image of the given size which is just the default color
+     */
+    fn background_color (size:Vec2, color: Color)-> Image
+    {
+        let mut color_image = Vec::new();
+       
+        for i in 0..((size.y*size.x) as usize) {
+            color_image.push(color);
+       }
+       color_image
+    }
+
+    /**
+     * returns a cropped portion of the image
+     */
     fn sub_image (&self, pos: Vec2, size: Vec2) -> Image{
        let x1 = (pos.x + size.x) as usize; //end of horizontal
        let y1 = (pos.x + size.x) as usize;//end of vertical
@@ -137,6 +158,13 @@ impl Image{
        Image{pixels:sub, width:size.x as usize, height:size.y as usize}
     }
 }
+
+/*
+This is a struct that is used as a reference point for instances of Animation entites,
+it holds the difference images that go together to form 1 animated action, as well as the 
+data that timings this animation
+*/
+#[derive(Clone, Copy)]
 struct Animation{
     pose: Vec<Image>, //images that make up the animation
     priority: usize, //priority of animation
@@ -146,9 +174,11 @@ struct Animation{
 }
 
 impl Animation{
-    fn new() -> Animation{ Animation{Vec<Image>::new(), 0, Vec<usize>::new(), false}}
-}
+    fn new() -> Animation{ Animation{poses:Vec<Image>::new(), priority:0, timing:Vec<usize>::new(), cycle:false}}
 
+    fn new_poses(poses: Vec<Image>) -> Animation{Animation{poses, priorirty:0, timing: Vec<usize>::new(), cycle: false}}
+}
+#[derive(Clone, Copy)]
 struct AnimationState{
     animation_played: usize,
     is_active: bool, //if animation has been triggered
@@ -157,11 +187,24 @@ struct AnimationState{
     cur_pose: usize, //index of pose
 }
 
+/* 
+This holds the information for one set of animations on a sprite sheet, 
+it tells you all the possible animations for a specific "character" on the sprite sheet
+ex on the cat sheet, a sprite would be a Grey Cat which has running and scared animations
+ */
+#[derive(Clone, Copy)]
 struct Sprite{
     animations: Vec<Animation>,
     default_animation: usize,
 }
-
+impl Sprite{
+    fn new(animations: Vec<Animation>)-> Sprite{Sprite{animations, default_animation: 0}}
+}
+/*
+This holds the sprite sheet image and knows the sprites on the sheet
+It represents all the possible things that can be drawn with
+ */
+#[derive(Clone, Copy)]
 struct Spritesheet{
     sheet: Image, //main image, all sprites and animations
     sprites: Vec<Sprite>, //indiviual sprites in sheet
@@ -176,21 +219,45 @@ impl SpriteSheet{
     animation_number: number of animations per sprite, 
             the lenght of this gives the number of distinct sprites
     pose_size: size of the images held by Animation, assumed constant for spritesheet
+    ths is a basic load sprite, based on having a consistent pose size
+    later would want to move this to reading more data from a file
    */
     fn load_sprites(&mut self, animation_number: Vec<usize>, pose_size: Vec2)
     {
         //number of poses in a animation
         let animation_length = self.sheet.x / pose_size.x as usize;
         let mut temp = Vec<Animation>::new();
+        let mut temp_poses = Vec<Image>::new();
+        let mut pos = (0.0, 0.0);
 
         //number of distinct sprites in sprite_sheet
         for i in 0..animation_number.iter()
         {
-            temp.add(Animation::new(self.sheet.sub_image()))
+            //go by number of animations for that sprite
+            for j in 0..animation_number[i]{
+                //number of poses in an animation
+                for k in 0..animation_length{
+                    temp_poses.push(self.sheet.sub_image(pos, pose_size)); 
+                    pos.x += pose_size.x;
+                }
+                pos.x = 0.0;
+                pos.y += pose_size.y;
+                temp.push(Animation::new_poses(temp_poses));
+                temp_poses.clear();
+            }
+            self.sprites.push(Sprite::new(temp));
+            temp.clear();
+            //need to go by animation and then get each pose
+            //end of loop, create and push sprite to sprites list
         }
     }
 }
-
+/**
+ * this is one instance of an animated object, it is connected with a sprite which dictates
+ * what animations is can perform
+ * the positioon and animation layer is based on the game entity it is connected to
+ */
+#[derive(Clone, Copy)]
 struct AnimationEntity{
     sprite: Sprite,
     state: AnimationState,
@@ -203,7 +270,9 @@ impl AnimationEntity{
     
 }
 /*
-gets rendered */
+This is what is parellel to the game state and handles the changes to
+make the images that are displayed match what has occured in the game */
+#[derive(Clone, Copy)]
 struct DrawState{
     tb_render: Image;
     sprite_sheet: SpriteSheet, //sprite sheet
@@ -216,7 +285,7 @@ impl DrawState{
     
     pub fn new(sheet: File, entites: Vec<Entity>, size: Vec2)-> DrawState {
         DrawState{
-        tb_render: Image::backgroun(size),
+        tb_render: Image::background(size),
         sprite_sheet: load_sheet(sheet),
         entities: entities,
         cur_frame: 0,
@@ -235,10 +304,9 @@ impl DrawState{
 
     fn pair_entity(&mut self: Self) -> (){
         
-        for i in entities.iter()
+        //think this syntax works?
+        for entity in entities.iter()
         {
-            let entity = entities[i];
-
             self.anim_entities.add(AnimationEntity::new(
                 self.sprite_sheet.sprites.get(entity.texture.index),
                 entity.texture.pos,
@@ -246,6 +314,10 @@ impl DrawState{
                 entity.texture.animation_layer
             )
         }
+    }
+
+    fn sync_entity(&mut self: Self)-> (){
+        
     }
     
 }
