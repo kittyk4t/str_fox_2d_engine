@@ -59,18 +59,39 @@ use vulkano::sync::{self, FlushError, GpuFuture};
 use vulkano::Version;
 use vulkano_win::VkSurfaceBuild;
 
-struct Color [u8, u8, u8, u8]; 
+struct Color{
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+}
 
-impl Color
+impl Color{
+    fn new(r: u8, g:u8, b:u8, a:u8)-> Color{
+        Color{r,g,b,a}
+    }
+
+    fn default() -> Color{
+        Color{0,0,0,255}
+    }
+
+    fn from_array(pixel: [u8; 4])-> Color{
+       Color{r: pixel[0],
+        g: pixel[1],
+        b: pixel[2],
+        a: pixel[3],} 
+    }
+}
 
 struct Image{
-    pixels:Box<[Color]>,
+    pixels:Vec<Color>,
     width:usize,
     height:usize,
 }
 impl Image{
-    fn new (png: File) -> Image{
-        let png_bytes = include_bytes!("../47.png").to_vec();
+    fn new (png: String) -> Image{
+        let file = File::open(png).unwrap(); //may or may not be right -> run compiler
+        let png_bytes = include_bytes!(file).to_vec();
         let cursor = Cursor::new(png_bytes);
         let decoder = png::Decoder::new(cursor);
         let mut reader = decoder.read_info().unwrap();
@@ -81,16 +102,39 @@ impl Image{
             array_layers: 1,
         };
         let mut image_data = Vec::new();
-        image_data.resize((info.width * info.height * 4) as u8, 0);
+        image_data.resize((info.width * info.height * 4) as usize, 0);
         reader.next_frame(&mut image_data).unwrap();
 
-        Image{image_data.boxed(), info.width, info.height}
+        let mut color_image = Vec::new();
+
+        for color in image_data.chunks_mut(4)
+        {
+            color_image.push(Color::from_array(color))
+        }
+
+        Image{pixels:color_image, width:info.width, height:info.height}
+    }
+
+    fn background (size:Vec2)
+    {
+        let mut color_image = Vec::new();
+       
+        for i in 0..((size.y*size.x) as usize) {
+            color_image.push(Color::default());
+       }
+       color_image
     }
 
     fn sub_image (&self, pos: Vec2, size: Vec2) -> Image{
-        let mut temp = Box[Color; 4*pos.x as usize*pos.y as usize];
+       let x1 = (pos.x + size.x) as usize; //end of horizontal
+       let y1 = (pos.x + size.x) as usize;//end of vertical
 
-        //needs to go through and copy only relavent portion of image
+       let sub = Vec<Color>::new();
+       //goes by height
+       for i in (pos.y)..(y1) {
+            sub.append(self.pixels[y * self.width + pos.x..(y * self.width + x1)]);//horizontal
+       }
+       Image{pixels:sub, width:size.x as usize, height:size.y as usize}
     }
 }
 struct Animation{
@@ -160,40 +204,40 @@ impl AnimationEntity{
 }
 /*
 gets rendered */
-struct Plate{
-    plate: Image;
+struct DrawState{
+    tb_render: Image;
     sprite_sheet: SpriteSheet, //sprite sheet
     entities: Vec<Entity>, //list of entities, gives positions and can trigger animations
     cur_frame: usize, //current frame
     anim_entities: Vec<AnimationEntity>,
-    dimensions: 
-    pipleline: 
-    swapchain: 
 }
 
-impl Plate{
+impl DrawState{
     
-    pub fn new(sheet: File, entites: Vec<Entity)
-    {
-        Plate{load_sheet(sheet), entities, cur_frame = 0, Vec<AnimationEntity>::new()}
-        pair_entity();
+    pub fn new(sheet: File, entites: Vec<Entity>, size: Vec2)-> DrawState {
+        DrawState{
+        tb_render: Image::backgroun(size),
+        sprite_sheet: load_sheet(sheet),
+        entities: entities,
+        cur_frame: 0,
+        anim_entities: Vec::new()}
     }
+  
     /*
     loads sprite sheet and data about how sheet is divided into sprites
     */
     fn load_sheet(sheet: File) -> SpriteSheet
     {
-        let image = Image::new(sheet);
-
-        let sheet = SpriteSheet::new(image);
-        sheet.load_sprites()
+        let sheet = SpriteSheet::new(Image::new(sheet));
+        sheet.load_sprites();
+        sheet
     }
 
     fn pair_entity(&mut self: Self) -> (){
         
         for i in entities.iter()
         {
-            let entity = entities.get(i);
+            let entity = entities[i];
 
             self.anim_entities.add(AnimationEntity::new(
                 self.sprite_sheet.sprites.get(entity.texture.index),
@@ -206,9 +250,6 @@ impl Plate{
     
 }
 
-struct Render{
-
-}
 /*
 need to figure out what can be shared and what needs to be seperate
 need ot set up pipeline
