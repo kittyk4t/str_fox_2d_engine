@@ -146,16 +146,38 @@ impl Image{
     /**
      * returns a cropped portion of the image
      */
-    fn sub_image (&self, pos: Vec2, size: Vec2) -> Image{
+    fn sub_image (&self: Self, pos: Vec2, size: Vec2) -> Image{
        let x1 = (pos.x + size.x) as usize; //end of horizontal
-       let y1 = (pos.x + size.x) as usize;//end of vertical
+       let y1 = (pos.y + size.y) as usize;//end of vertical
 
        let sub = Vec<Color>::new();
        //goes by height
        for i in (pos.y)..(y1) {
-            sub.append(self.pixels[y * self.width + pos.x..(y * self.width + x1)]);//horizontal
+            sub.append(self.pixels[i * self.width + pos.x..(i * self.width + x1)]);//horizontal
        }
        Image{pixels:sub, width:size.x as usize, height:size.y as usize}
+    }
+
+    fn paste_into (&mut self: Self, paste_image: Image, to_pos: Vec2)-> ()
+    {
+        //check valid position in image
+        assert!(self.width >= to_pos.x as usize);
+        assert!(self.height >= to_pos.y as usize);
+        let x1 = to_pos.x as usize+ paste_image.width; //end of horizontal
+        let y1 = to_pos.y as usize + paste_image.height;//end of vertical
+
+        if x1 > self.width{
+            x1 = self.width;
+        }
+
+        if y1 > self.height{
+            y1 = self.height;
+        }
+
+        //pastes image at the specified positon 
+        for i in (to_pos.y)..(y1){
+            self.pixels[i * paste_image.width + to_pos.x..(i * paste_image.width + x1)] = paste_image.pixels[i * paste_image.width + 0..(i * paste_image.width + x1)];
+        }
     }
 }
 
@@ -180,11 +202,57 @@ impl Animation{
 }
 #[derive(Clone, Copy)]
 struct AnimationState{
-    animation_played: usize,
+    animation_played: usize, //index for sprite animations
     is_active: bool, //if animation has been triggered
-    is_visiable: bool,
+    is_visible: bool,
     frame_triggered: usize, //frame from plate when triggered
     cur_pose: usize, //index of pose
+}
+
+impl AnimationState{
+    fn new() -> AnimationState {AnimationState{animation_played:0, is_active: true, is_visible: false, frame_triggered: 0, cur_pose:0}}
+}
+
+struct AnimQueue {
+    queue:Vec<(f32,AnimationState,bool)>
+}
+impl AnimQueue {
+    fn push(&mut self, p:f32, anim:AnimationState, pause:bool, retrigger:bool) {
+        // If this is a retrigger, replace the old animation (if any)
+        // otherwise, leave the old animation alone!
+        let to_insert = if let Some(found_pos) = queue.iter().position(|(qp, qanim, _)| qanim.animation == anim) {
+            let (_qp, qanim, _qpause) = queue.remove(found_pos);
+            if retrigger {
+                (p, anim, pause)
+            } else {
+                (p, qanim, pause)
+            }
+        } else {
+            (p, anim, pause)
+        };
+        // put highest priority thing at end
+        let pos = queue.iter().rposition(|(qp, _, _)| qp < p).unwrap_or(0);
+        queue.insert(pos, (p, anim, pause));
+    }
+    fn tick(&mut self) {
+        let qlen = self.queue.len();
+        // tick possibly-paused non-current animations
+        if qlen > 1 {
+            for (_p, anim, pause) in self.queue.iter_mut().take(qlen-2) {
+                if !pause { anim.tick(); }
+            }
+        }
+        // ignore pause for topmost anim if any and tick it
+        if let Some((_,active,_)) = self.queue.last() {
+            active.tick();
+        }
+        // Throw away finished animations
+        self.queue.retain(|(_p, anim, _)| !anim.is_finished());
+    }
+    // Got to return option here---nothing to return if we have no animations in the queue!
+    fn current_frame(&self) -> Option<Rect> {
+        self.queue.last().map(|(_,anim,_)| anim.current_frame())
+    }
 }
 
 /* 
@@ -261,12 +329,19 @@ impl SpriteSheet{
 struct AnimationEntity{
     sprite: Sprite,
     state: AnimationState,
-    position: Vec2,
+    pos: Vec2,
     size: Vec2,
     animation_layer: usize,
 }
 
 impl AnimationEntity{
+
+    //returns current pose
+    fn pose(&self: Self) -> Image{
+        self.sprite.animations[state.animation_played][state.cur_pose];
+    }
+
+    fn trigger_animation(&mut self: Self, animation: usize, frame: usize)
     
 }
 /*
@@ -318,8 +393,19 @@ impl DrawState{
 
     fn sync_entity(&mut self: Self)-> (){
         
+        if entities.length == anim_entities.length{
+
+        }
     }
     
+    fn draw_state(&mut self: Self) -> DrawState{
+        self.sync_entity();
+
+        for entity in self.anim_entities{
+            self.tb_render.paste_image(entity.pose(), entity.pos);
+        }
+        self
+    }
 }
 
 /*
