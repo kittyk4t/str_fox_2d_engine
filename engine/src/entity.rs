@@ -116,11 +116,42 @@ struct HurtBox {
     check_collison: bool,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialOrd<Self>, Ord, PartialEq<Self>, Eq)]
 struct Entity {
+    id: usize;
     ent_type: EntityType,
     positon: Vec2,
     vel: Vec2,
     hurt_box: HurtBox,
     texture: Texture,
+}
+
+impl Ord for Entity {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialOrd<Self> for Entity{
+     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+    fn lt(&self, other: &Self) -> bool { 
+        self.id < other.id
+     }
+    fn le(&self, other: &Self) -> bool { 
+        self.id <= other.id
+    }
+    fn gt(&self, other: &Self) -> bool { 
+        self.id > other.id
+     }
+    fn ge(&self, other: &Self) -> bool { 
+        self.id >= other.id
+     }
+
+}
+impl PartialEq<Self> for Entity{
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }

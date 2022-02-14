@@ -202,15 +202,35 @@ impl Animation{
 }
 #[derive(Clone, Copy)]
 struct AnimationState{
-    animation_played: usize, //index for sprite animations
-    is_active: bool, //if animation has been triggered
+    animation: Animation, //index for sprite animations
     is_visible: bool,
     frame_triggered: usize, //frame from plate when triggered
     cur_pose: usize, //index of pose
+    is_finished: bool
 }
 
 impl AnimationState{
-    fn new() -> AnimationState {AnimationState{animation_played:0, is_active: true, is_visible: false, frame_triggered: 0, cur_pose:0}}
+    fn new(animation: Animation, frame_triggered: usize) -> AnimationState {AnimationState{animation, is_visible: false, frame_triggered, cur_pose:0}}
+   
+    fn tick(&mut self, cur_frame: usize) -> (){
+        if self.frame_triggered + self.animation.timing[self.cur_pose] == cur_frame{
+            self.cur_pose += 1;
+
+            if self.cur_pose >= self.animation.len(){
+                self.cur_pose = 0;
+                self.is_finished = !animation.cycle; 
+            }
+        }
+
+    }
+    fn current_frame(&self) -> usize{
+        self.cur_pose
+    }
+
+    fn is_finished(&self)-> bool {
+        self.is_finished
+
+    }
 }
 
 struct AnimQueue {
@@ -234,23 +254,23 @@ impl AnimQueue {
         let pos = queue.iter().rposition(|(qp, _, _)| qp < p).unwrap_or(0);
         queue.insert(pos, (p, anim, pause));
     }
-    fn tick(&mut self) {
+    fn tick(&mut self, cur_frame: usize) {
         let qlen = self.queue.len();
         // tick possibly-paused non-current animations
         if qlen > 1 {
             for (_p, anim, pause) in self.queue.iter_mut().take(qlen-2) {
-                if !pause { anim.tick(); }
+                if !pause { anim.tick(cur_frame); }
             }
         }
         // ignore pause for topmost anim if any and tick it
         if let Some((_,active,_)) = self.queue.last() {
-            active.tick();
+            active.tick(cur_frame);
         }
         // Throw away finished animations
         self.queue.retain(|(_p, anim, _)| !anim.is_finished());
     }
     // Got to return option here---nothing to return if we have no animations in the queue!
-    fn current_frame(&self) -> Option<Rect> {
+    fn current_frame(&self) -> Option<usize> {
         self.queue.last().map(|(_,anim,_)| anim.current_frame())
     }
 }
@@ -325,10 +345,11 @@ impl SpriteSheet{
  * what animations is can perform
  * the positioon and animation layer is based on the game entity it is connected to
  */
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialOrd<Self>, Ord, PartialEq<Self>, Eq)]
 struct AnimationEntity{
+    id: usize,
     sprite: Sprite,
-    state: AnimationState,
+    states: AnimQueue,
     pos: Vec2,
     size: Vec2,
     animation_layer: usize,
@@ -338,11 +359,47 @@ impl AnimationEntity{
 
     //returns current pose
     fn pose(&self: Self) -> Image{
-        self.sprite.animations[state.animation_played][state.cur_pose];
+        self.sprite.animations[state.animation_played][states.current_frame()]
     }
 
-    fn trigger_animation(&mut self: Self, animation: usize, frame: usize)
+    fn trigger_animation(&mut self: Self, animation: usize, frame: usize) -> (){
+        let state = AnimationState::new(self.sprite.animations[animation], frame);
+        state.is_visible = true;
+
+        //need to figure out retrigger and pause
+        self.states.push(state);
+    }
     
+}
+
+impl Ord for AnimationEntity {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialOrd<Self> for AnimationEntity{
+     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+    fn lt(&self, other: &Self) -> bool { 
+        self.id < other.id
+     }
+    fn le(&self, other: &Self) -> bool { 
+        self.id <= other.id
+    }
+    fn gt(&self, other: &Self) -> bool { 
+        self.id > other.id
+     }
+    fn ge(&self, other: &Self) -> bool { 
+        self.id >= other.id
+     }
+
+}
+impl PartialEq<Self> for AnimationEntity{
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }
 /*
 This is what is parellel to the game state and handles the changes to
@@ -383,6 +440,7 @@ impl DrawState{
         for entity in entities.iter()
         {
             self.anim_entities.add(AnimationEntity::new(
+                entity.id,
                 self.sprite_sheet.sprites.get(entity.texture.index),
                 entity.texture.pos,
                 entity.texture.size,
@@ -392,8 +450,13 @@ impl DrawState{
     }
 
     fn sync_entity(&mut self: Self)-> (){
+        self.entities.sort(); //sorts by id
+        self.anim_entities.sort(); //sorts by id
         
-        if entities.length == anim_entities.length{
+        if self.entities.len() == self.anim_entities.len(){
+            for entity in self.entities.iter(){
+                //use a binary search?
+            }
 
         }
     }
