@@ -24,6 +24,26 @@ use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
+struct CPUbuffer{
+    buffer: CpuAccessibleBuffer,
+    dimensions: ImageDimensions::Dim2d,
+    image: StorageImage,
+    texture: ImageView,
+    sampler: Sampler
+}
+
+struct Setup{
+    instance: VulkanoInstance,
+    surface: WindowBuilder,
+    buffer: CPUbuffer,
+    render_pass: vulkano::single_pass_renderpass,
+    pipleline: GraphicsPipeline,
+
+}
+impl Setup{
+    fn new() -> Setup{vulkano_init(), }
+}
+
 fn vulkano_int() -> VulkannoInstance:instance{
     let required_extensions = vulkano_win::required_extensions();
     let instance = Instance::new(None, Version::V1_1, &required_extensions, None).unwrap();

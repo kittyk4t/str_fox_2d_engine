@@ -276,7 +276,7 @@ fn main() {
     let fs = fs::load(device.clone()).unwrap();
 
     // Here's our (2D drawing) framebuffer.
-    let mut fb2d = Image::new(Vec2i::new(WIDTH as i32, HEIGHT as i32);
+    let mut fb2d = Image::new(Vec2i::new(WIDTH as i32, HEIGHT as i32));
     // We'll work on it locally, and copy it to a GPU buffer every frame.
     // Then on the GPU, we'll copy it into an Image.
     let fb2d_buffer = CpuAccessibleBuffer::from_iter(
