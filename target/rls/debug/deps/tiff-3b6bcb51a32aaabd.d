@@ -1,0 +1,12 @@
+/Users/katianawieser/CS181G/str_fox_2d_engine/target/rls/debug/deps/tiff-3b6bcb51a32aaabd.rmeta: /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/lib.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/mod.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/ifd.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/stream.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/mod.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/colortype.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/writer.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/error.rs
+
+/Users/katianawieser/CS181G/str_fox_2d_engine/target/rls/debug/deps/tiff-3b6bcb51a32aaabd.d: /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/lib.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/mod.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/ifd.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/stream.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/mod.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/colortype.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/writer.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/error.rs
+
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/lib.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/mod.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/ifd.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/decoder/stream.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/mod.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/colortype.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/encoder/writer.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/tiff-0.3.1/src/error.rs:

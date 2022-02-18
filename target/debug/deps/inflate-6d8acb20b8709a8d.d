@@ -1,0 +1,11 @@
+/Users/katianawieser/CS181G/str_fox_2d_engine/target/debug/deps/inflate-6d8acb20b8709a8d.rmeta: /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/lib.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/checksum.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/writer.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/utils.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/reader.rs
+
+/Users/katianawieser/CS181G/str_fox_2d_engine/target/debug/deps/libinflate-6d8acb20b8709a8d.rlib: /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/lib.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/checksum.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/writer.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/utils.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/reader.rs
+
+/Users/katianawieser/CS181G/str_fox_2d_engine/target/debug/deps/inflate-6d8acb20b8709a8d.d: /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/lib.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/checksum.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/writer.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/utils.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/reader.rs
+
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/lib.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/checksum.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/writer.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/utils.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/inflate-0.4.5/src/reader.rs:

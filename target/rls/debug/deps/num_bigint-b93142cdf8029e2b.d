@@ -1,0 +1,10 @@
+/Users/katianawieser/CS181G/str_fox_2d_engine/target/rls/debug/deps/num_bigint-b93142cdf8029e2b.rmeta: /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/lib.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/macros.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/biguint.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/algorithms.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/monty.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/bigint.rs
+
+/Users/katianawieser/CS181G/str_fox_2d_engine/target/rls/debug/deps/num_bigint-b93142cdf8029e2b.d: /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/lib.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/macros.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/biguint.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/algorithms.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/monty.rs /Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/bigint.rs
+
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/lib.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/macros.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/biguint.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/algorithms.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/monty.rs:
+/Users/katianawieser/.cargo/registry/src/github.com-1ecc6299db9ec823/num-bigint-0.1.44/src/bigint.rs:

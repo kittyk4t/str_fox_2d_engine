@@ -6,3 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+vulkano = "0.27.1"
+vulkano-shaders = "0.27.1"
+winit = "0.25"
+vulkano-win = "0.27.1"
+image_reading = {version="0.24", package = "image"}
+json = "*"
+serde = { version = "1.0.104", features = ["derive"] }
+serde_json = "1.0.48"
+

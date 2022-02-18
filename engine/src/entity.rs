@@ -73,21 +73,22 @@ abstract on collision method
 use serde;
 use serde::Deserialize;
 use serde_json;
+use super::types::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
-enum Team {
+pub enum Team {
     Good,
     Bad,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
-enum DisplayType {
+pub enum DisplayType {
     Preview,
     Lives,
     TextBox,
 }
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
-enum EntityType {
+pub enum EntityType {
     Player,
     Enemy,
     Projectile(Team),
@@ -95,63 +96,36 @@ enum EntityType {
     Background,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
-struct Texture {
-    index: usize,
-    postion: Vec2,
-    size: Vec2,
-    is_visible: bool,
-    animation_layer: usize,
+#[derive(Clone)]
+pub struct Texture {
+    pub index: usize,
+    pub pos: Vec2,
+   pub  size: Vec2,
+    pub is_visible: bool,
+    pub animation_layer: usize,
 }
 
 pub trait Colliable {
     fn on_collison(&self);
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
-struct HurtBox {
-    position: Vec2,
+#[derive(Clone, Copy, Debug)]
+pub struct HurtBox {
+    pos: Vec2,
     size: Vec2,
     collision_layer: usize,
     check_collison: bool,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialOrd<Self>, Ord, PartialEq<Self>, Eq)]
-struct Entity {
-    id: usize;
-    ent_type: EntityType,
-    positon: Vec2,
-    vel: Vec2,
-    hurt_box: HurtBox,
-    texture: Texture,
+#[derive(Clone)]
+pub struct Entity {
+    pub id: usize,
+    pub ent_type: EntityType,
+    pub positon: Vec2,
+    pub vel: Vec2,
+    pub hurt_box: HurtBox,
+    pub texture: Texture,
 }
 
-impl Ord for Entity {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.id.cmp(&other.id)
-    }
-}
 
-impl PartialOrd<Self> for Entity{
-     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-    fn lt(&self, other: &Self) -> bool { 
-        self.id < other.id
-     }
-    fn le(&self, other: &Self) -> bool { 
-        self.id <= other.id
-    }
-    fn gt(&self, other: &Self) -> bool { 
-        self.id > other.id
-     }
-    fn ge(&self, other: &Self) -> bool { 
-        self.id >= other.id
-     }
 
-}
-impl PartialEq<Self> for Entity{
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
