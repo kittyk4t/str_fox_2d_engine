@@ -24,118 +24,87 @@ use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
-struct CPUbuffer{
-    buffer: CpuAccessibleBuffer,
-    dimensions: ImageDimensions::Dim2d,
-    image: StorageImage,
-    texture: ImageView,
-    sampler: Sampler
-}
+// We now create a buffer that will store the shape of our triangle.
+    #[derive(Default, Debug, Clone)]
+    struct Vertex {
+        position: [f32; 2],
+        uv: [f32; 2],
+    }
 
 struct Setup{
     instance: VulkanoInstance,
     surface: WindowBuilder,
-    buffer: CPUbuffer,
+    swapchain: Swapchain,
+    frame_buffer: CpuAccessibleBuffer,
+    vertex_buffer: CpuAccessibleBuffer,
+    dimensions: ImageDimensions::Dim2d,
+    images: StorageImage,
+    frame_image: Storage,
+    texture: ImageView,
+    sampler: Sampler
+    device: Device,
+    queue: Queue,
     render_pass: vulkano::single_pass_renderpass,
     pipleline: GraphicsPipeline,
+    layout: PipelineLayout,
+    previous_frame_end: //fill
+    recreate_swapchain: bool,
+    viewport: //fill
+    set: //fill
+
 
 }
+
 impl Setup{
-    fn new() -> Setup{vulkano_init(), }
-}
 
-fn vulkano_int() -> VulkannoInstance:instance{
-    let required_extensions = vulkano_win::required_extensions();
-    let instance = Instance::new(None, Version::V1_1, &required_extensions, None).unwrap();
-}
+    fn init_vulkan(&mut self) -> (){
+         let required_extensions = vulkano_win::required_extensions();
+        self.instance = Instance::new(None, Version::V1_1, &required_extensions, None).unwrap();
+        self. surface = WindowBuilder::new()
+        .build_vk_surface(&event_loop, instance.clone())
+        .unwrap();
 
-fn vulkano_init_state(&instance: VulkanoInstance::Instance,surface: WindowBuilder ) -> RETURNTYPE
-{
-    let device_extensions = DeviceExtensions {
+    }
+
+    fn init_device(&mut self, width: u32, height: u32) -> ()
+    {
+        let device_extensions = DeviceExtensions {
         khr_swapchain: true,
         ..DeviceExtensions::none()
     };
-
-    // We then choose which physical device to use. First, we enumerate all the available physical
-    // devices, then apply filters to narrow them down to those that can support our needs.
     let (physical_device, queue_family) = PhysicalDevice::enumerate(&instance)
-        .filter(|&p| {
-            // Some devices may not support the extensions or features that your application, or
-            // report properties and limits that are not sufficient for your application. These
-            // should be filtered out here.
-            p.supported_extensions().is_superset_of(&device_extensions) 
-        })
+        .filter(|&p| p.supported_extensions().is_superset_of(&device_extensions))
         .filter_map(|p| {
-            // For each physical device, we try to find a suitable queue family that will execute
-            // our draw commands.
             p.queue_families()
-                .find(|&q| {
-                    // We select a queue family that supports graphics operations. When drawing to
-                    // a window surface, as we do in this example, we also need to check that queues
-                    // in this queue family are capable of presenting images to the surface.
-                    q.supports_graphics() && surface.is_supported(q).unwrap_or(false)
-                })
-                // The code here searches for the first queue family that is suitable. If none is
-                // found, `None` is returned to `filter_map`, which disqualifies this physical
-                // device.
+                .find(|&q| q.supports_graphics() && self.surface.is_supported(q).unwrap_or(false))
                 .map(|q| (p, q))
         })
-        .min_by_key(|(p, _)| {
-            // We assign a better score to device types that are likely to be faster/better.
-            match p.properties().device_type {
-                PhysicalDeviceType::DiscreteGpu => 0,
-                PhysicalDeviceType::IntegratedGpu => 1,
-                PhysicalDeviceType::VirtualGpu => 2,
-                PhysicalDeviceType::Cpu => 3,
-                PhysicalDeviceType::Other => 4,
-            }
+        .min_by_key(|(p, _)| match p.properties().device_type {
+            PhysicalDeviceType::DiscreteGpu => 0,
+            PhysicalDeviceType::IntegratedGpu => 1,
+            PhysicalDeviceType::VirtualGpu => 2,
+            PhysicalDeviceType::Cpu => 3,
+            PhysicalDeviceType::Other => 4,
         })
         .unwrap();
-
-    // Some little debug infos.
-    println!(
-        "Using device: {} (type: {:?})",
-        physical_device.properties().device_name,
-        physical_device.properties().device_type,
-    );
-
-    // Now initializing the device. This is probably the most important object of Vulkan.
     let (device, mut queues) = Device::new(
         physical_device,
         &Features::none(),
-        // Some devices require certain extensions to be enabled if they are present
-        // (e.g. `khr_portability_subset`). We add them to the device extensions that we're going to
-        // enable.
         &physical_device
             .required_extensions()
             .union(&device_extensions),
         [(queue_family, 0.5)].iter().cloned(),
     )
     .unwrap();
-
-     let queue = queues.next().unwrap();
-
-    // Before we can draw on the surface, we have to create what is called a swapchain. Creating
-    // a swapchain allocates the color buffers that will contain the image that will ultimately
-    // be visible on the screen. These images are returned alongside the swapchain.
+    self.queue = queues.next().unwrap();
+    self.device = device;
     let (mut swapchain, images) = {
-        // Querying the capabilities of the surface. When we create the swapchain we can only
-        // pass values that are allowed by the capabilities.
         let caps = surface.capabilities(physical_device).unwrap();
-
-        // The alpha mode indicates how the alpha value of the final image will behave. For example,
-        // you can choose whether the window will be opaque or transparent.
         let composite_alpha = caps.supported_composite_alpha.iter().next().unwrap();
-
-        // Choosing the internal format that the images will have.
         let format = caps.supported_formats[0].0;
-
-        // The dimensions of the window, only used to initially setup the swapchain.
-        // Both of these cases need the swapchain to use the window dimensions, so we just use that.
-        let dimensions: [u32; 2] = surface.window().inner_size().into();
-
-        // Please take a look at the docs for the meaning of the parameters we didn't mention.
-        Swapchain::start(device.clone(), surface.clone())
+        let mode = vulkano::swapchain::PresentMode::Immediate;
+        let dimensions: [u32; 2] = self.surface.window().inner_size().into();
+        Swapchain::start(device.clone(), self.surface.clone())
             .num_images(caps.min_image_count)
             .format(format)
             .dimensions(dimensions)
@@ -145,21 +114,47 @@ fn vulkano_init_state(&instance: VulkanoInstance::Instance,surface: WindowBuilde
             .build()
             .unwrap()
     };
+    self.swapchain = swapchain;
+    self.images = images;
+
+    vulkano::impl_vertex!(Vertex, position, uv);
+
+    self.vertex_buffer = CpuAccessibleBuffer::from_iter(
+        device.clone(),
+        BufferUsage::all(),
+        false,
+        [
+            Vertex {
+                position: [-1.0, -1.0],
+                uv: [0.0, 0.0],
+            },
+            Vertex {
+                position: [3.0, -1.0],
+                uv: [2.0, 0.0],
+            },
+            Vertex {
+                position: [-1.0, 3.0],
+                uv: [0.0, 2.0],
+            },
+        ]
+        .iter()
+        .cloned(),
+    )
+    .unwrap();
     mod vs {
         vulkano_shaders::shader! {
             ty: "vertex",
             src: "
-				#version 450
+                #version 450
 
-				layout(location = 0) in vec2 position;
+                layout(location = 0) in vec2 position;
                 layout(location = 1) in vec2 uv;
                 layout(location = 0) out vec2 out_uv;
-
-				void main() {
-					gl_Position = vec4(position, 0.0, 1.0);
+                void main() {
+                    gl_Position = vec4(position, 0.0, 1.0);
                     out_uv = uv;
-				}
-			"
+                }
+            "
         }
     }
 
@@ -167,65 +162,259 @@ fn vulkano_init_state(&instance: VulkanoInstance::Instance,surface: WindowBuilde
         vulkano_shaders::shader! {
             ty: "fragment",
             src: "
-				#version 450
+                #version 450
 
+                layout(set = 0, binding = 0) uniform sampler2D tex;
                 layout(location = 0) in vec2 uv;
                 layout(location = 0) out vec4 f_color;
-                layout(set = 0, binding = 0) uniform sampler2D tex;
 
-				void main() {
-                    f_color = texture(tex, uv); 
-				}
-			"
+                void main() {
+                    f_color = texture(tex, uv);
+                }
+            "
         }
     }
 
-    let vs = vs::load(device.clone()).unwrap();
-    let fs = fs::load(device.clone()).unwrap();
+    let vs = vs::load(self.device.clone()).unwrap();
+    let fs = fs::load(self.device.clone()).unwrap();
 
-    // At this point, OpenGL initialization would be finished. However in Vulkan it is not. OpenGL
-    // implicitly does a lot of computation whenever you draw. In Vulkan, you have to do all this
-    // manually.
+    
+    // We'll work on it locally, and copy it to a GPU buffer every frame.
+    // Then on the GPU, we'll copy it into an Image.
+    self.frame_buffer = CpuAccessibleBuffer::from_iter(
+        self.device.clone(),
+        BufferUsage::transfer_source(),
+        false,
+        (0..width * height).map(|_| (255_u8, 0_u8, 0_u8, 0_u8)),
+    )
+    .unwrap();
+    // Let's set up the Image we'll copy into:
+    self.dimensions = ImageDimensions::Dim2d {
+        width: width as u32,
+        height: height as u32,
+        array_layers: 1,
+    };
+    //image n GPU
+    self.frame_image = StorageImage::with_usage(
+        self.device.clone(),
+        self.dimensions,
+        Format::R8G8B8A8_UNORM,
+        ImageUsage {
+            // This part is key!
+            transfer_destination: true,
+            sampled: true,
+            storage: true,
+            transfer_source: false,
+            color_attachment: false,
+            depth_stencil_attachment: false,
+            transient_attachment: false,
+            input_attachment: false,
+        },
+        ImageCreateFlags::default(),
+        std::iter::once(queue_family),
+    )
+    .unwrap();
+    // Get a view on it to use as a texture:
+    self.texture = ImageView::new(fb2d_image.clone()).unwrap();
 
-    // The next step is to create a *render pass*, which is an object that describes where the
-    // output of the graphics pipeline will go. It describes the layout of the images
-    // where the colors, depth and/or stencil information will be written.
-    let render_pass = vulkano::single_pass_renderpass!(
+    self.sampler = Sampler::new(
         device.clone(),
+        Filter::Linear,
+        Filter::Linear,
+        MipmapMode::Nearest,
+        SamplerAddressMode::Repeat,
+        SamplerAddressMode::Repeat,
+        SamplerAddressMode::Repeat,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+    )
+    .unwrap();
+
+    self.render_pass = vulkano::single_pass_renderpass!(
+        self.device.clone(),
         attachments: {
-            // `color` is a custom name we give to the first and only attachment.
             color: {
-                // `load: Clear` means that we ask the GPU to clear the content of this
-                // attachment at the start of the drawing.
-                load: Clear,
-                // `store: Store` means that we ask the GPU to store the output of the draw
-                // in the actual image. We could also ask it to discard the result.
+                // Pro move: We're going to cover the screen completely. Trust us!
+                load: DontCare,
                 store: Store,
-                // `format: <ty>` indicates the type of the format of the image. This has to
-                // be one of the types of the `vulkano::format` module (or alternatively one
-                // of your structs that implements the `FormatDesc` trait). Here we use the
-                // same format as the swapchain.
                 format: swapchain.format(),
-                // TODO:
                 samples: 1,
             }
         },
         pass: {
-            // We use the attachment named `color` as the one and only color attachment.
             color: [color],
-            // No depth-stencil attachment is indicated with empty brackets.
             depth_stencil: {}
         }
     )
+    .unwrap();
+    self.pipeline = GraphicsPipeline::start()
+        .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
+        .vertex_shader(vs.entry_point("main").unwrap(), ())
+        .input_assembly_state(InputAssemblyState::new())
+        .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
+        .fragment_shader(fs.entry_point("main").unwrap(), ())
+        .render_pass(Subpass::from(self.render_pass.clone(), 0).unwrap())
+        .build(device.clone())
+        .unwrap();
+
+    }
+
+    fn init_builder(&mut self) -> ()
+    {
+        let layout = pipeline.layout().descriptor_set_layouts().get(0).unwrap();
+    let mut set_builder = PersistentDescriptorSet::start(layout.clone());
+
+    set_builder
+        .add_sampled_image(self.texture, self.sampler)
+        .unwrap();
+
+    self.set = set_builder.build().unwrap();
+
+    self.viewport = Viewport {
+        origin: [0.0, 0.0],
+        dimensions: [0.0, 0.0],
+        depth_range: 0.0..1.0,
+    };
+
+    self.framebuffers = window_size_dependent_setup(&self.images, self.render_pass.clone(), &mut self.viewport);
+    self.recreate_swapchain = false;
+    self.previous_frame_end = Some(sync::now(self.device.clone()).boxed());
+        
+
+    }
+
+    impl run(&mut self, &fb2d: Image) -> (){
+         // Now we can copy into our buffer.
+                {
+                    let writable_fb = &mut *self.frame_buffer.write().unwrap();
+                    writable_fb.copy_from_slice(&fb2d); //copy frame buffer into GPU
+                }
+
+                if self.recreate_swapchain {
+                    let dimensions: [u32; 2] = surface.window().inner_size().into();
+                    let (new_swapchain, new_images) =
+                        match self.swapchain.recreate().dimensions(dimensions).build() {
+                            Ok(r) => r,
+                            Err(SwapchainCreationError::UnsupportedDimensions) => return,
+                            Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
+                        };
+
+                    self.swapchain = new_swapchain;
+                    self.framebuffers = window_size_dependent_setup(
+                        &new_images,
+                        self.render_pass.clone(),
+                        &mut self.viewport,
+                    );
+                    self.recreate_swapchain = false;
+                }
+                let (image_num, suboptimal, acquire_future) =
+                    match swapchain::acquire_next_image(swapchain.clone(), None) {
+                        Ok(r) => r,
+                        Err(AcquireError::OutOfDate) => {
+                            self.recreate_swapchain = true;
+                            return;
+                        }
+                        Err(e) => panic!("Failed to acquire next image: {:?}", e),
+                    };
+                if suboptimal {
+                    self.recreate_swapchain = true;
+                }
+
+                let mut builder = AutoCommandBufferBuilder::primary(
+                    self.device.clone(),
+                    self.queue.family(),
+                    CommandBufferUsage::OneTimeSubmit,
+                )
+                .unwrap();
+
+                builder
+                    // Now copy that framebuffer buffer into the framebuffer image
+                    .copy_buffer_to_image(self.frame_buffer.clone(), self.frame_image.clone())
+                    .unwrap()
+                    // And resume our regularly scheduled programming
+                    .begin_render_pass(
+                        self.framebuffers[image_num].clone(),
+                        SubpassContents::Inline,
+                        std::iter::once(vulkano::format::ClearValue::None),
+                    )
+                    .unwrap()
+                    .set_viewport(0, [self.viewport.clone()])
+                    .bind_pipeline_graphics(self.pipeline.clone())
+                    .bind_descriptor_sets(
+                        PipelineBindPoint::Graphics,
+                        pipeline.layout().clone(),
+                        0,
+                        set.clone(),
+                    )
+                    .bind_vertex_buffers(0, self.vertex_buffer.clone())
+                    .draw(self.vertex_buffer.len() as u32, 1, 0, 0)
+                    .unwrap()
+                    .end_render_pass()
+                    .unwrap();
+                //dbg!(builder_start.elapsed());
+                let command_buffer = builder.build().unwrap();
+
+                let future = acquire_future
+                    .then_execute(self.queue.clone(), command_buffer)
+                    .unwrap()
+                    .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_num)
+                    .then_signal_fence_and_flush();
+                //dbg!(future_aquire_start.elapsed());
+
+                match future {
+                    Ok(future) => {
+                        self.previous_frame_end = Some(future.boxed());
+                    }
+                    Err(FlushError::OutOfDate) => {
+                        self.recreate_swapchain = true;
+                        self.previous_frame_end = Some(sync::now(self.device.clone()).boxed());
+                    }
+                    Err(e) => {
+                        println!("Failed to flush future: {:?}", e);
+                        self.previous_frame_end = Some(sync::now(self.device.clone()).boxed());
+                    }
+                }
+                
+            }
+            _ => (),
+        }
+    });
+}
+    }
+
+
+}
+fn window_size_dependent_setup(
+    images: &[Arc<SwapchainImage<Window>>],
+    render_pass: Arc<RenderPass>,
+    viewport: &mut Viewport,
+) -> Vec<Arc<Framebuffer>> {
+    let dimensions = images[0].dimensions().width_height();
+    viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+
+    images
+        .iter()
+        .map(|image| {
+            let view = ImageView::new(image.clone()).unwrap();
+            Framebuffer::start(render_pass.clone())
+                .add(view)
+                .unwrap()
+                .build()
+                .unwrap()
+        })
+        .collect::<Vec<_>>()
 }
 
-fn main()
-{
-    let vulkan_instance = vulkan_init();
-    use vulkano_win::VkSurfaceBuild;
-    let event_loop = EventLoop::new();
-    let surface = WindowBuilder::new()
-    .build_vk_surface(&event_loop, vulkan_instance.clone())
-    .unwrap();
-    let mut vulkan_state = vulkan_init_state(&vulkan_instance);
-}
+
+   
+   
+    
+
+    
+
+    
+    
+
+    

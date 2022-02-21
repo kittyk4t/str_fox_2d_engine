@@ -75,7 +75,7 @@ use serde::Deserialize;
 use serde_json;
 use super::types::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub enum Team {
     Good,
     Bad,
@@ -87,7 +87,7 @@ pub enum DisplayType {
     Lives,
     TextBox,
 }
-#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub enum EntityType {
     Player,
     Enemy,
@@ -96,11 +96,9 @@ pub enum EntityType {
     Background,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Hash)]
 pub struct Texture {
     pub index: usize,
-    pub pos: Vec2,
-   pub  size: Vec2,
     pub is_visible: bool,
     pub animation_layer: usize,
 }
@@ -109,7 +107,7 @@ pub trait Colliable {
     fn on_collison(&self);
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub struct HurtBox {
     pos: Vec2,
     size: Vec2,
@@ -117,11 +115,11 @@ pub struct HurtBox {
     check_collison: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Hash)]
 pub struct Entity {
     pub id: usize,
     pub ent_type: EntityType,
-    pub positon: Vec2,
+    pub pos: Vec2,
     pub vel: Vec2,
     pub hurt_box: HurtBox,
     pub texture: Texture,

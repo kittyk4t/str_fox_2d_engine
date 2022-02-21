@@ -1,3 +1,6 @@
+use std::hash::{Hash, Hasher};
+
+
 #[derive(Clone, Copy, Debug)]
 pub struct Vec2 {
     pub x: f32,
@@ -11,7 +14,17 @@ impl Vec2 {
     pub fn to_Vec2i(self) -> Vec2i {Vec2i{x: self.x as i32, y:self.y as i32}}
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+//this is bad if hash were to just be used on Vec2...
+//BUT Vec2 should only ever be hashed in the entity
+//ask how to make this suck less
+impl Hash for Vec2 {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let vec = self.to_Vec2i();
+        vec.hash(state);
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct Vec2i {
     pub x: i32,
     pub y: i32,
