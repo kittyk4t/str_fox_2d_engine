@@ -56,6 +56,13 @@ struct Setup{
 }
 
 impl Setup{
+    pub fn create_setUp(width: u32, height: u32) -> Setup {
+        setup = Setup::new();
+        setup.init_vulkan();
+        setup.init_device(width, height);
+        setup.init_builder();
+        setup
+    }
 
     fn init_vulkan(&mut self) -> (){
          let required_extensions = vulkano_win::required_extensions();
@@ -285,7 +292,7 @@ impl Setup{
 
     }
 
-    impl run(&mut self, &fb2d: Image) -> (){
+    pub fn run(&mut self, &fb2d: Image) -> (){
          // Now we can copy into our buffer.
                 {
                     let writable_fb = &mut *self.frame_buffer.write().unwrap();
@@ -386,6 +393,7 @@ impl Setup{
 
 
 }
+
 fn window_size_dependent_setup(
     images: &[Arc<SwapchainImage<Window>>],
     render_pass: Arc<RenderPass>,
