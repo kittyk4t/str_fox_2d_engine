@@ -33,7 +33,6 @@ use winit::window::{Window, WindowBuilder};
 
 
 struct VulkanConfig{
-    instance: Arc<vulkano::instance::Instance>,
     surface: Arc<vulkano::swapchain::Surface<winit::window::Window>>,
     device: Arc<vulkano::device::Device>,
     set: Arc<vulkano::descriptor_set::PersistentDescriptorSet>,
@@ -278,7 +277,6 @@ fn vulkan_init(event_loop: &EventLoop<()>)-> (VulkanConfig, VulkanState)
     let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
 
     (VulkanConfig{
-        instance, 
         surface,
         device,
         set,
@@ -300,7 +298,10 @@ fn vulkan_init(event_loop: &EventLoop<()>)-> (VulkanConfig, VulkanState)
 
 }
 
+fn render3d(&mut vulkan_config: VulkanConfig, &mut vulkan_state: VulkanState) -> (){
+    
 
+}
 
 /*
 struct Setup{
