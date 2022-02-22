@@ -2,7 +2,7 @@ use super::types::*;
 
 #[derive(Clone)]
 pub struct Image {
-    buffer: Box<[Color]>,
+    pub buffer: Box<[Color]>,
     pub sz: Vec2i,
 }
 
@@ -47,15 +47,23 @@ impl Image {
      * returns a cropped portion of the image
      */
     pub fn sub_image(&self, pos: Vec2i, size: Vec2i) -> Image {
-        let x1 = (pos.x + size.x) as usize; //end of horizontal
-        let y1 = (pos.y + size.y) as usize; //end of vertical
+        assert!(self.sz.x > pos.x);
+        assert!(self.sz.y > pos.y);
+        let mut self_i;
+        let mut self_j;
+
 
         let mut sub = Image::new(size);
+      
         //goes by height
-        for i in (pos.y as usize)..(y1) {
-            for j in pos.x as usize.. x1
+        for i in 0..(size.y as usize) {
+            for j in 0..(size.x as usize)
             {
-                sub.buffer[i * self.sz.x as usize + j] = self.buffer[i * self.sz.x as usize + j];
+                self_i = pos.y as usize + i;
+                self_j = pos.x as usize + j;
+
+                sub.buffer[i * sub.sz.x as usize + j] = self.buffer[self_i * self.sz.x as usize + self_j];
+                
             }
         }
         sub

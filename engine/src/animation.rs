@@ -14,9 +14,9 @@ it holds the difference images that go together to form 1 animated action, as we
 data that timings this animation
 */
 #[derive(Clone)]
-struct Animation{
+pub struct Animation{
     id: usize,
-    pose: Vec<Image>, //images that make up the animation
+    pub pose: Vec<Image>, //images that make up the animation
     priority: usize, //priority of animation
     timing: Vec<usize>, //how many frames each pose is held 
     cycle: bool, //animation is looping or non-looping (aka a cycle or not)
@@ -33,7 +33,7 @@ impl Animation{
         timing: Vec::<usize>::new(), cycle: false, retrigger: false, pause: false}}
 }
 #[derive(Clone)]
-struct AnimationState{
+pub struct AnimationState{
     animation: Animation, //index for sprite animations
     is_visible: bool,
     frame_triggered: usize, //frame from plate when triggered
@@ -66,7 +66,7 @@ impl AnimationState{
 }
 
 #[derive(Clone)]
-struct AnimQueue {
+pub struct AnimQueue {
     queue:Vec<(f32,AnimationState,bool)>
 }
 impl AnimQueue {
@@ -87,22 +87,20 @@ impl AnimQueue {
             (p, anim.clone(), pause)
         };
         // put highest priority thing at end
-        let pos = self.queue.iter().rposition(|(qp, _, _)| qp < &p).unwrap_or(0);
+        let pos = self.queue.iter().rposition(|(qp, _, _)| qp < &p).map(|n| n+1).unwrap_or(0);
         self.queue.insert(pos, (p, anim, pause));
     }
     fn tick(&mut self, cur_frame: usize) {
         let qlen = self.queue.len();
         // tick possibly-paused non-current animations
         if qlen > 1 {
-            for (_p, anim, pause) in self.queue.iter_mut().take(qlen-2) {
+            for (_p, anim, pause) in self.queue.iter_mut().take(qlen-1) {
                 if ! *pause { anim.tick(cur_frame); }
             }
         }
         // ignore pause for topmost anim if any and tick it
-        if let Some((_,active,_)) = self.queue.last() {
-           let mut act = active.clone();
-            act.tick(cur_frame);
-            active = &act;
+        if let Some((_,active,_)) = self.queue.last_mut() {
+            active.tick(cur_frame);
 
         }
         // Throw away finished animations
@@ -125,9 +123,9 @@ it tells you all the possible animations for a specific "character" on the sprit
 ex on the cat sheet, a sprite would be a Grey Cat which has running and scared animations
  */
 #[derive(Clone)]
-struct Sprite{
-    animations: Vec<Animation>,
-    default_animation: usize,
+pub struct Sprite{
+    pub animations: Vec<Animation>,
+    pub default_animation: usize,
 }
 impl Sprite{
     fn new(animations: Vec<Animation>)-> Sprite{Sprite{animations, default_animation: 0}}
@@ -137,12 +135,12 @@ This holds the sprite sheet image and knows the sprites on the sheet
 It represents all the possible things that can be drawn with
  */
 #[derive(Clone)]
-struct SpriteSheet{
-    sheet: Image, //main image, all sprites and animations
-    sprites: Vec<Sprite>, //indiviual sprites in sheet
+pub struct SpriteSheet{
+    pub sheet: Image, //main image, all sprites and animations
+    pub sprites: Vec<Sprite>, //indiviual sprites in sheet
 }
 impl SpriteSheet{
-    fn new(sheet: Image) -> SpriteSheet
+   pub  fn new(sheet: Image) -> SpriteSheet
     {
         SpriteSheet{sheet, sprites: Vec::<Sprite>::new()}
     }
@@ -154,9 +152,10 @@ impl SpriteSheet{
     ths is a basic load sprite, based on having a consistent pose size
     later would want to move this to reading more data from a file
    */
-     fn load_sprites(&mut self, animation_number: Vec<usize>, pose_size: Vec2i) {
+     pub fn load_sprites(&mut self, animation_number: Vec<usize>, pose_size: Vec2i) {
         //number of poses in a animation
         let animation_length = self.sheet.sz.x / pose_size.x;
+        
         let mut temp = Vec::<Animation>::new();
         let mut temp_poses = Vec::<Image>::new();
         let mut pos = Vec2i{x:0, y:0};
@@ -164,12 +163,14 @@ impl SpriteSheet{
         //number of distinct sprites in sprite_sheet
         for i in animation_number.iter() {
             //go by number of animations for that sprite
-            for j in 0..*i {
+            for _j in 0..*i {
                 //number of poses in an animation
-                for k in 0..animation_length {
+                for _k in 0..animation_length {
+                   
                     temp_poses.push(self.sheet.sub_image(pos, pose_size));
                     pos.x += pose_size.x;
                 }
+                
                 pos.x = 0;
                 pos.y += pose_size.y;
                 temp.push(Animation::new_poses(*i, temp_poses.clone()));
@@ -188,7 +189,7 @@ impl SpriteSheet{
  * the positioon and animation layer is based on the game entity it is connected to
  */
 #[derive(Clone)]
-struct AnimationEntity{
+pub struct AnimationEntity{
     id: usize,
     sprite: Sprite,
     states: AnimQueue,
@@ -229,7 +230,7 @@ impl AnimationEntity{
 This is what is parellel to the game state and handles the changes to
 make the images that are displayed match what has occured in the game */
 #[derive(Clone)]
-struct DrawState{
+pub struct DrawState{
     tb_render: Image,
     sprite_sheet: SpriteSheet, //sprite sheet
     entities: Vec<Entity>, //list of entities, gives positions and can trigger animations

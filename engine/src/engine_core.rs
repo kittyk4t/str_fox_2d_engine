@@ -31,6 +31,278 @@ use winit::window::{Window, WindowBuilder};
         uv: [f32; 2],
     }
 
+
+struct VulkanConfig{
+    instance: Arc<vulkano::instance::Instance>,
+    surface: Arc<vulkano::swapchain::Surface<winit::window::Window>>,
+    device: Arc<vulkano::device::Device>,
+    set: Arc<vulkano::descriptor_set::PersistentDescriptorSet>,
+    pipeline: Arc<vulkano::pipeline::GraphicsPipeline>,
+    vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
+    fb2d_image: Arc<StorageImage>,
+    fb2d_buffer: Arc<CpuAccessibleBuffer<[Color]>>
+    fb2d: Image, //draw into every frame, but also idenity stays same so same diff
+    queue: Arc<vulkano::device::Queue>,
+    render_pass: Arc<vulkano::render_pass::RenderPass>,
+    
+}
+
+struct VulkanState{
+    viewport: Viewport,
+    framebuffers: Vec<Arc<vulkano::render_pass::Framebuffer>>,
+    recreate_swapchain: bool,
+    previous_frame_end: Option<Box<dyn vulkano::sync::GpuFuture>>,
+    swapchain: Arc<Swapchain<winit::init::Window>>,
+
+    
+}
+fn vulkan_init(event_loop: &EventLoop<()>)-> (VulkanConfig, VulkanState)
+{
+    let required_extensions = vulkano_win::required_extensions();
+    let instance = Instance::new(None, Version::V1_1, &required_extensions, None).unwrap();
+    let event_loop = EventLoop::new();
+    let surface = WindowBuilder::new()
+        .build_vk_surface(&event_loop, instance.clone())
+        .unwrap();
+    let device_extensions = DeviceExtensions {
+        khr_swapchain: true,
+        ..DeviceExtensions::none()
+    };
+    let (physical_device, queue_family) = PhysicalDevice::enumerate(&instance)
+        .filter(|&p| p.supported_extensions().is_superset_of(&device_extensions))
+        .filter_map(|p| {
+            p.queue_families()
+                .find(|&q| q.supports_graphics() && surface.is_supported(q).unwrap_or(false))
+                .map(|q| (p, q))
+        })
+        .min_by_key(|(p, _)| match p.properties().device_type {
+            PhysicalDeviceType::DiscreteGpu => 0,
+            PhysicalDeviceType::IntegratedGpu => 1,
+            PhysicalDeviceType::VirtualGpu => 2,
+            PhysicalDeviceType::Cpu => 3,
+            PhysicalDeviceType::Other => 4,
+        })
+        .unwrap();
+    let (device, mut queues) = Device::new(
+        physical_device,
+        &Features::none(),
+        &physical_device
+            .required_extensions()
+            .union(&device_extensions),
+        [(queue_family, 0.5)].iter().cloned(),
+    )
+    .unwrap();
+    let queue = queues.next().unwrap();
+    let (mut swapchain, images) = {
+        let caps = surface.capabilities(physical_device).unwrap();
+        let composite_alpha = caps.supported_composite_alpha.iter().next().unwrap();
+        let format = caps.supported_formats[0].0;
+        let mode = vulkano::swapchain::PresentMode::Immediate;
+        let dimensions: [u32; 2] = surface.window().inner_size().into();
+        Swapchain::start(device.clone(), surface.clone())
+            .num_images(caps.min_image_count)
+            .format(format)
+            .dimensions(dimensions)
+            .usage(ImageUsage::color_attachment())
+            .sharing_mode(&queue)
+            .composite_alpha(composite_alpha)
+            .build()
+            .unwrap()
+    };
+
+    // We now create a buffer that will store the shape of our triangle.
+    #[derive(Default, Debug, Clone)]
+    struct Vertex {
+        position: [f32; 2],
+        uv: [f32; 2],
+    }
+    vulkano::impl_vertex!(Vertex, position, uv);
+
+    let vertex_buffer = CpuAccessibleBuffer::from_iter(
+        device.clone(),
+        BufferUsage::all(),
+        false,
+        [
+            Vertex {
+                position: [-1.0, -1.0],
+                uv: [0.0, 0.0],
+            },
+            Vertex {
+                position: [3.0, -1.0],
+                uv: [2.0, 0.0],
+            },
+            Vertex {
+                position: [-1.0, 3.0],
+                uv: [0.0, 2.0],
+            },
+        ]
+        .iter()
+        .cloned(),
+    )
+    .unwrap();
+    mod vs {
+        vulkano_shaders::shader! {
+            ty: "vertex",
+            src: "
+                #version 450
+
+                layout(location = 0) in vec2 position;
+                layout(location = 1) in vec2 uv;
+                layout(location = 0) out vec2 out_uv;
+                void main() {
+                    gl_Position = vec4(position, 0.0, 1.0);
+                    out_uv = uv;
+                }
+            "
+        }
+    }
+
+    mod fs {
+        vulkano_shaders::shader! {
+            ty: "fragment",
+            src: "
+                #version 450
+
+                layout(set = 0, binding = 0) uniform sampler2D tex;
+                layout(location = 0) in vec2 uv;
+                layout(location = 0) out vec4 f_color;
+
+                void main() {
+                    f_color = texture(tex, uv);
+                }
+            "
+        }
+    }
+
+    let vs = vs::load(device.clone()).unwrap();
+    let fs = fs::load(device.clone()).unwrap();
+    / Here's our (2D drawing) framebuffer.
+    let mut fb2d = Image::new(Vec2i::new(WIDTH as i32, HEIGHT as i32));
+    // We'll work on it locally, and copy it to a GPU buffer every frame.
+    // Then on the GPU, we'll copy it into an Image.
+    let fb2d_buffer = CpuAccessibleBuffer::from_iter(
+        device.clone(),
+        BufferUsage::transfer_source(),
+        false,
+        (0..WIDTH * HEIGHT).map(|_| (255_u8, 0_u8, 0_u8, 0_u8)),
+    )
+    .unwrap();
+    // Let's set up the Image we'll copy into:
+    let dimensions = ImageDimensions::Dim2d {
+        width: WIDTH as u32,
+        height: HEIGHT as u32,
+        array_layers: 1,
+    };
+    //image n GPU
+    let fb2d_image = StorageImage::with_usage(
+        device.clone(),
+        dimensions,
+        Format::R8G8B8A8_UNORM,
+        ImageUsage {
+            // This part is key!
+            transfer_destination: true,
+            sampled: true,
+            storage: true,
+            transfer_source: false,
+            color_attachment: false,
+            depth_stencil_attachment: false,
+            transient_attachment: false,
+            input_attachment: false,
+        },
+        ImageCreateFlags::default(),
+        std::iter::once(queue_family),
+    )
+    .unwrap();
+    // Get a view on it to use as a texture:
+    let fb2d_texture = ImageView::new(fb2d_image.clone()).unwrap();
+
+    let fb2d_sampler = Sampler::new(
+        device.clone(),
+        Filter::Linear,
+        Filter::Linear,
+        MipmapMode::Nearest,
+        SamplerAddressMode::Repeat,
+        SamplerAddressMode::Repeat,
+        SamplerAddressMode::Repeat,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+    )
+    .unwrap();
+
+    let render_pass = vulkano::single_pass_renderpass!(
+        device.clone(),
+        attachments: {
+            color: {
+                // Pro move: We're going to cover the screen completely. Trust us!
+                load: DontCare,
+                store: Store,
+                format: swapchain.format(),
+                samples: 1,
+            }
+        },
+        pass: {
+            color: [color],
+            depth_stencil: {}
+        }
+    )
+    .unwrap();
+    let pipeline = GraphicsPipeline::start()
+        .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
+        .vertex_shader(vs.entry_point("main").unwrap(), ())
+        .input_assembly_state(InputAssemblyState::new())
+        .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
+        .fragment_shader(fs.entry_point("main").unwrap(), ())
+        .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+        .build(device.clone())
+        .unwrap();
+
+    let layout = pipeline.layout().descriptor_set_layouts().get(0).unwrap();
+    let mut set_builder = PersistentDescriptorSet::start(layout.clone());
+
+    set_builder
+        .add_sampled_image(fb2d_texture, fb2d_sampler)
+        .unwrap();
+
+    let set = set_builder.build().unwrap();
+
+    let mut viewport = Viewport {
+        origin: [0.0, 0.0],
+        dimensions: [0.0, 0.0],
+        depth_range: 0.0..1.0,
+    };
+
+    let mut framebuffers = window_size_dependent_setup(&images, render_pass.clone(), &mut viewport);
+    let mut recreate_swapchain = false;
+    let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
+
+    (VulkanConfig{
+        instance, 
+        surface,
+        device,
+        set,
+        pipeline,
+        vertex_buffer,
+        fb2d_image,
+        fb2d_buffer,
+        fb2d,
+        queue,
+        render_pass,
+        
+    },VulkanState{
+        viewport,
+    framebuffers,
+    recreate_swapchain,
+    previous_frame_end, 
+        swapchain,
+    })
+
+}
+
+
+
+/*
 struct Setup{
     instance: VulkanoInstance,
     surface: WindowBuilder,
@@ -47,12 +319,10 @@ struct Setup{
     render_pass: vulkano::single_pass_renderpass,
     pipleline: GraphicsPipeline,
     layout: PipelineLayout,
-    previous_frame_end: //fill
+    previous_frame_end: Option<Box<dyn Future>>,
     recreate_swapchain: bool,
-    viewport: //fill
-    set: //fill
-
-
+    viewport: Viewport,
+    set: Result<Arc<PersistentDescriptorSet<StdDescriptorPoolAlloc>>,
 }
 
 impl Setup{
@@ -414,7 +684,7 @@ fn window_size_dependent_setup(
         })
         .collect::<Vec<_>>()
 }
-
+*/
 
    
    

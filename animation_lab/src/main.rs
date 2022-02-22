@@ -1,4 +1,7 @@
 use engine::*;
+use engine::types::*;
+use engine::image::*;
+use engine::animation::*;
 use serde;
 use serde::Deserialize;
 use serde_json;
@@ -147,14 +150,14 @@ impl Figure //LOOK HERE
 
 fn main() {
     let background_image = Image::new(Vec2i::new(WIDTH as i32, HEIGHT as i32));
-    let sprite_sheet = SpriteSheet::new(Image::from_file("src/loki_test.png".to_string()));
-    let sprites = Vec::new();
+    let mut sprite_sheet = SpriteSheet::new(Image::from_file(std::path::Path::new("src/loki_test.png")));
+    let mut sprites = Vec::new();
     sprites.push(1);
-    
+
     sprite_sheet.load_sprites(sprites, Vec2i::new(48, 48));
 
-    let color = Color::new(0, 0, 0, 255);
-    
+    let color = engine::types::Color::new(0, 0, 0, 255);
+    let fig = Figure::new(Vec2::new(0.0, 0.0), Vec2::new(48.0, 48.0), Vec2::new(0.0, 0.0),Vec2::new(0.0, 0.0), sprite_sheet.sprites[0].clone());
 
     let required_extensions = vulkano_win::required_extensions();
     let instance = Instance::new(None, Version::V1_1, &required_extensions, None).unwrap();
@@ -283,7 +286,7 @@ fn main() {
         device.clone(),
         BufferUsage::transfer_source(),
         false,
-        (0..WIDTH * HEIGHT).map(|_| (255_u8, 0_u8, 0_u8, 0_u8)),
+        (0..WIDTH * HEIGHT).map(|_| Color::new(255_u8, 0_u8, 0_u8, 0_u8)),
     )
     .unwrap();
     // Let's set up the Image we'll copy into:
@@ -495,8 +498,9 @@ fn main() {
                         //fig.set_acc(SurfaceType::Normal, true, -1.0);
                     }
                 }
-                fb2d.clear();
-                
+                fb2d.clear(Color::new(0, 0, 0, 255));
+                let rect = Rect::new(Vec2i::new(0,0), fig.size.to_Vec2i());
+                fb2d.bitblt(&fig.sprite.animations[fig.sprite.default_animation].pose[0], rect, fig.pos.to_Vec2i());
 
                 // We can update our local framebuffer here:
 
@@ -533,7 +537,7 @@ fn main() {
                 // Now we can copy into our buffer.
                 {
                     let writable_fb = &mut *fb2d_buffer.write().unwrap();
-                    writable_fb.copy_from_slice(&fb2d); //copy frame buffer into GPU
+                    writable_fb.copy_from_slice(fb2d.as_slice()); //copy frame buffer into GPU
                 }
 
                 if recreate_swapchain {
