@@ -74,6 +74,7 @@ use serde;
 use serde::Deserialize;
 use serde_json;
 use super::types::*;
+use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub enum Team {
@@ -121,6 +122,7 @@ pub struct Entity {
     pub ent_type: EntityType,
     pub pos: Vec2,
     pub vel: Vec2,
+    pub size: Vec2i,
     pub hurt_box: HurtBox,
     pub texture: Texture,
 }

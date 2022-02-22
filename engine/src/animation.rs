@@ -3,6 +3,7 @@ use serde;
 use serde::Deserialize;
 use serde_json;
 use std::fs;
+use std::hash::{Hash, Hasher};
 
 use super::types::*; 
 use super::image::*;
@@ -98,9 +99,11 @@ impl AnimQueue {
             }
         }
         // ignore pause for topmost anim if any and tick it
-        if let Some((_, active,_)) = self.queue.last() {
-           
-            active.tick(cur_frame);
+        if let Some((_,active,_)) = self.queue.last() {
+           let mut act = active.clone();
+            act.tick(cur_frame);
+            active = &act;
+
         }
         // Throw away finished animations
         self.queue.retain(|(_p, anim, _)| !anim.is_finished());
@@ -261,18 +264,17 @@ impl DrawState{
         for entity in self.entities.iter()
         {
             self.anim_entities.push(AnimationEntity::new(
-                entity.id,
+                entity.id, //work to get this into a hashmap
                 self.sprite_sheet.sprites[entity.texture.index].clone(),
                 AnimQueue::new(),
-                entity.texture.pos,
-                entity.texture.size,
+                entity.pos,
+                entity.size,
                 entity.texture.animation_layer
             ))
         }
     }
 
     fn sync_entity(&mut self)-> (){
-        
         
         if self.entities.len() == self.anim_entities.len(){
             for entity in self.entities.iter(){
