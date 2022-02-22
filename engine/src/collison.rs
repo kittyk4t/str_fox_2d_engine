@@ -22,6 +22,7 @@ match on enum projectile/entity type but only care about projectile and enemy an
 
 */
 let NUM_LAYERS: usize = 10;
+//need way to also return who was collided with 
 
 fn check_overlap_1D(low1: f32, high1: f32, low2: f32, high2: f32) -> bool {
 	if low1 <= low2{
@@ -30,12 +31,13 @@ fn check_overlap_1D(low1: f32, high1: f32, low2: f32, high2: f32) -> bool {
 	return low1 < high2;
 }
 
-fn check_overlap_2D(pos1: Vec2, size1: Vec2, pos2: Vec2, size2: Vec2) -> bool {
+pub fn check_overlap_2D(pos1: Vec2, size1: Vec2, pos2: Vec2, size2: Vec2) -> bool {
 	let x_overlap = check_overlap_1D(pos1.x, pos1.x + size1.x, pos2.x, pos2.x + size2.x);
 	let y_overlap = check_overlap_1D(pos1.y, pos2.y + size1.y, pos2.y, pos2.y + size2.y);
 	return x_overlap && y_overlap;
 }
 
+//probably have this return the other that it collided on
 fn check_collision_layer(this: entity::Entity, layer: Vec<entity::Entity>) {
 	let this_pos = this.position + this.hurt_box.position;
 	let this_size = this.hurt_box.size;
@@ -57,7 +59,7 @@ fn split_layers(entities: Vec<entity::Entity>) -> [Vec<entity::Entity>; NUM_LAYE
 	return layers;
 }
 
-fn check_collisions(entities: Vec<entity::Entity>){
+pub fn check_collisions(entities: Vec<entity::Entity>){
 	let layers = split_layers(entities);
 	
 	for entity in entities{
