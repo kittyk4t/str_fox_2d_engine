@@ -4,10 +4,12 @@ use serde::Deserialize;
 use serde_json;
 use std::fs;
 use std::hash::{Hash, Hasher};
+use std::collections::HashMap;
 
 use super::types::*; 
 use super::image::*;
 use super::entity::*;
+use super::engine_core::*;
 /*
 This is a struct that is used as a reference point for instances of Animation entites,
 it holds the difference images that go together to form 1 animated action, as well as the 
@@ -42,7 +44,7 @@ pub struct AnimationState{
 }
 
 impl AnimationState{
-    fn new(animation: Animation, frame_triggered: usize) -> AnimationState {AnimationState{animation, is_visible: false, frame_triggered, cur_pose:0, is_finished: false}}
+    fn new(animation: Animation, is_visible: bool, frame_triggered: usize) -> AnimationState {AnimationState{animation, is_visible, frame_triggered, cur_pose:0, is_finished: false}}
    
     fn tick(&mut self, cur_frame: usize) -> (){
         if self.frame_triggered + self.animation.timing[self.cur_pose] == cur_frame{
@@ -190,7 +192,6 @@ impl SpriteSheet{
  */
 #[derive(Clone)]
 pub struct AnimationEntity{
-    id: usize,
     sprite: Sprite,
     states: AnimQueue,
     pos: Vec2,
@@ -200,27 +201,29 @@ pub struct AnimationEntity{
 
 impl AnimationEntity{
 
-    fn new( id: usize,sprite: Sprite, states: AnimQueue, pos: Vec2, size: Vec2i, animation_layer: usize,) -> 
+    pub fn new( id: usize,sprite: Sprite, states: AnimQueue, pos: Vec2, size: Vec2i, animation_layer: usize,) -> 
     AnimationEntity{AnimationEntity{id, sprite, states, pos, size, animation_layer} }
 
-    fn to_Rect(&self) -> Rect {
+    pub fn to_Rect(&self) -> Rect {
         let image = self.pose();
         
         Rect::new(self.pos.to_Vec2i(), image.sz)
         
     }
     //returns current pose
-    fn pose(&self )-> Image{
+    pub fn pose(&self )-> Image{
         //queue.current_frame() retunrs the current frame of animatino; need to figure out the animation being played
         self.sprite.animations[self.states.current_animation().unwrap()].pose[self.states.current_frame().unwrap()].clone()
     }
 
-    fn trigger_animation(&mut self, animation: usize, frame: usize) -> (){
+    pub fn trigger_animation(&mut self, animation: usize, is_visible: bool, frame: usize) -> (){
         let animation = &self.sprite.animations[animation];
-        let mut state = AnimationState::new(animation.clone(), frame);
-        state.is_visible = true;
-
+        let mut state = AnimationState::new(animation.clone(),is_visible, frame);
         self.states.push(animation.priority as f32, state, animation.retrigger, animation.pause);
+    }
+
+    pub fn tick(&mut self, frame: usize){
+        self.states.tick(frame);
     }
     
 }
@@ -233,9 +236,8 @@ make the images that are displayed match what has occured in the game */
 pub struct DrawState{
     tb_render: Image,
     sprite_sheet: SpriteSheet, //sprite sheet
-    entities: Vec<Entity>, //list of entities, gives positions and can trigger animations
     cur_frame: usize, //current frame
-    anim_entities: Vec<AnimationEntity>,
+    anim_entities: HashMap<Entity, AnimationEntity>,
 }
 
 impl DrawState{
@@ -244,9 +246,8 @@ impl DrawState{
         DrawState{
         tb_render: Image::new(size),
         sprite_sheet: DrawState::load_sheet(sheet, anim_num, pose_sz),
-        entities: entities,
         cur_frame: 0,
-        anim_entities: Vec::new()}
+        anim_entities: DrawState::init_anim_enitities(entities)}
     }
   
     /*
@@ -259,40 +260,77 @@ impl DrawState{
         sheet
     }
 
-    fn pair_entity(&mut self) -> (){
-        
-        //think this syntax works?
+    fn init_anim_enitities(&mut self, entities: Vec<Entity>) -> HashMap<Entity, AnimationEntity>{
+        let mut map = HashMap::new();
         for entity in self.entities.iter()
         {
-            self.anim_entities.push(AnimationEntity::new(
-                entity.id, //work to get this into a hashmap
+            map.insert(entity,AnimationEntity::new(
                 self.sprite_sheet.sprites[entity.texture.index].clone(),
                 AnimQueue::new(),
                 entity.pos,
                 entity.size,
                 entity.texture.animation_layer
-            ))
+            ));
         }
     }
 
-    fn sync_entity(&mut self)-> (){
-        
-        if self.entities.len() == self.anim_entities.len(){
-            for entity in self.entities.iter(){
-                //use a binary search?
+    fn sync_entity(&mut self, entities: Vec<Entity>)-> (){
+        //remove anim_entites whose entities are gone?
+        for entity in self.entities.iter(){
+            match self.anim_entities.get_mut(entity){
+                None => {
+                    self.anim_entities.insert(entity, AnimationEntity::new(
+                self.sprite_sheet.sprites[entity.texture.index].clone(),
+                AnimQueue::new(),
+                entity.pos,
+                entity.size,
+                entity.texture.animation_layer
+            ));
+                }, 
+                Some(key, anim_entity) => anim_entity.pos = key.pos;
             }
-
+            
         }
     }
+
+    pub fn trigger_animation(&mut self, entity: Entity, anim_id: usize)-> (){
+        match self.anim_entities.get_mut(entity){
+            None => {
+                let mut new = AnimationEntity::new(
+                self.sprite_sheet.sprites[entity.texture.index].clone(),
+                AnimQueue::new(),
+                entity.pos,
+                entity.size,
+                entity.texture.animation_layer
+            );
+            new.trigger_animation(anim_id, entity.texture.is_visible, self.cur_frame);
+            self.anim_entities.insert(entity, new);
+                
+            },
+            Some(key, anim_enity) =>{
+                anim_entity.trigger_animation(anim_id, entity.texture.is_visible, self.cur_frame);
+            }
+        }
+    }
+    fn remove_entity()
     
     //returns a clone of the draw state
-    fn draw_state(&mut self) -> DrawState{
-        self.sync_entity();
+    fn incr_frame(&mut self, entities: Vec<Entity>) -> (){
+        self.sync_entity(entites);
 
-        for entity in &self.anim_entities{
-            self.tb_render.bitblt(&entity.pose(), entity.to_Rect(), entity.pos.to_Vec2i());
+        //will need to check syntax
+        for (entity, anim_entity) in &self.anim_entities.iter().unwrap(){
+            self.tb_render.bitblt(&anim_entity.pose(), anim_entity.to_Rect(), anim_entity.pos.to_Vec2i());
+            anim_entity.tick(self.cur_frame);
         }
-        self.clone()
+        self.cur_frame += 1;
+    }
+
+    pub fn load_buffer(&mut self, vulkan_config:  &mut VulkanConfig) -> ()
+    {
+        self.incr_frame();
+        let rect = Rect{pos:Vec2i::new(0,0), sz: self.tb_render.sz};
+        vulkan_config.fb2d.bitblt(&self.tb_render, rect, Vec2i::new(0,0));
     }
 }
 

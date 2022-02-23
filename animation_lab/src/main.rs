@@ -1,3 +1,4 @@
+use crate::entity::*;
 use crate::types::*;
 use engine::animation::*;
 use engine::engine_core::*;
@@ -40,6 +41,19 @@ impl Figure //LOOK HERE
             acc,
             sprite,
             cur_anim: Vec2::new(0.0, 0.0),
+        }
+    }
+
+    fn to_entity(&self) -> Entity {
+        Entity {
+            id: 0,
+            pos: self.pos,
+            size: self.size.to_Vec2i(),
+            texture: Texture {
+                index: 0,
+                is_visible: true,
+                animation_layer: 1,
+            },
         }
     }
 
@@ -126,7 +140,6 @@ impl Figure //LOOK HERE
 }
 
 fn main() {
-    let background_image = Image::new(Vec2i::new(WIDTH as i32, HEIGHT as i32));
     let mut sprite_sheet =
         SpriteSheet::new(Image::from_file(std::path::Path::new("src/loki_test.png")));
     let mut sprites = Vec::new();
@@ -141,6 +154,17 @@ fn main() {
         Vec2::new(0.0, 0.0),
         Vec2::new(0.0, 0.0),
         sprite_sheet.sprites[0].clone(),
+    );
+
+    let mut entities = Vec::new();
+    entities.push(fig.to_entity());
+
+    let mut draw_state = DrawState::new(
+        std::path::Path::new("src/loki_test.png"),
+        sprites,
+        Vec2i::new(48, 48),
+        entities,
+        Vec2i::new(WIDTH as i32, HEIGHT as i32),
     );
 
     let mut now_keys = [false; 255];
@@ -195,14 +219,7 @@ fn main() {
                 // now_keys are officially "old" now, after update
                 prev_keys.copy_from_slice(&now_keys);
 
-                /*
-                vulkan_config.fb2d.clear(Color::new(0, 0, 0, 255));
-                let rect = Rect::new(Vec2i::new(0, 0), fig.size.to_Vec2i());
-                vulkan_config.fb2d.bitblt(
-                    &fig.sprite.animations[fig.sprite.default_animation].pose[0],
-                    rect,
-                    fig.pos.to_Vec2i(),
-                );*/
+                draw_state.incr_frame(&mut vulkan_config);
                 engine_core::render3d(&mut vulkan_config, &mut vulkan_state);
             }
             _ => (),

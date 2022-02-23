@@ -119,11 +119,11 @@ pub struct HurtBox {
 #[derive(Clone, Hash)]
 pub struct Entity {
     pub id: usize,
-    pub ent_type: EntityType,
+    //pub ent_type: EntityType,
     pub pos: Vec2,
     pub vel: Vec2,
     pub size: Vec2i,
-    pub hurt_box: HurtBox,
+    //pub hurt_box: HurtBox,
     pub texture: Texture,
 }
 

@@ -211,7 +211,7 @@ pub fn vulkan_init(
         let dimensions: [u32; 2] = surface.window().inner_size().into();
 
         Swapchain::start(device.clone(), surface.clone())
-            .num_images(8)
+            .num_images(2)
             .format(format)
             .dimensions(dimensions)
             .usage(ImageUsage::color_attachment())
