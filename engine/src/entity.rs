@@ -97,7 +97,7 @@ pub enum EntityType {
     Background,
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Texture {
     pub index: usize,
     pub is_visible: bool,
@@ -108,7 +108,7 @@ pub trait Colliable {
     fn on_collison(&self);
 }
 
-#[derive(Clone, Copy, Debug, Hash)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct HurtBox {
     pos: Vec2,
     size: Vec2,
@@ -116,7 +116,7 @@ pub struct HurtBox {
     check_collison: bool,
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Entity {
     pub id: usize,
     //pub ent_type: EntityType,

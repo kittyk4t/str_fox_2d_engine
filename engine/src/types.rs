@@ -24,6 +24,14 @@ impl Hash for Vec2 {
     }
 }
 
+impl PartialEq for Vec2{
+    fn eq(&self, other: &Self) -> bool {
+        (self.x - other.x).abs() > 0.0001 && (self.y - other.y).abs() > 0.0001 
+    }
+}
+
+impl Eq for Vec2{}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct Vec2i {
     pub x: i32,

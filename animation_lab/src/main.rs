@@ -48,6 +48,7 @@ impl Figure //LOOK HERE
         Entity {
             id: 0,
             pos: self.pos,
+            vel: self.vel,
             size: self.size.to_Vec2i(),
             texture: Texture {
                 index: 0,
@@ -145,7 +146,7 @@ fn main() {
     let mut sprites = Vec::new();
     sprites.push(1);
 
-    sprite_sheet.load_sprites(sprites, Vec2i::new(48, 48));
+    sprite_sheet.load_sprites(sprites.clone(), Vec2i::new(48, 48));
 
     let color = engine::types::Color::new(0, 0, 0, 255);
     let fig = Figure::new(
@@ -161,11 +162,13 @@ fn main() {
 
     let mut draw_state = DrawState::new(
         std::path::Path::new("src/loki_test.png"),
-        sprites,
+        sprites.clone(),
         Vec2i::new(48, 48),
-        entities,
+        entities.as_ref(),
         Vec2i::new(WIDTH as i32, HEIGHT as i32),
     );
+    //let test = draw_state.anim_entities.get().unwrap().sprite.animations.len();
+    println!("{}", draw_state.anim_entities.len());
 
     let mut now_keys = [false; 255];
     let mut prev_keys = now_keys.clone();
@@ -216,10 +219,16 @@ fn main() {
                 }
             },
             Event::MainEventsCleared => {
+                if now_keys[VirtualKeyCode::Right as usize]{
+                    draw_state.trigger_animation(entities[0].clone(), 0);
+                }
                 // now_keys are officially "old" now, after update
                 prev_keys.copy_from_slice(&now_keys);
 
-                draw_state.incr_frame(&mut vulkan_config);
+            
+                //let rect = Rect::new(Vec2i::new(0,0), Vec2i::new(96, 48));
+                //vulkan_config.fb2d.bitblt(&draw_state.sprite_sheet.sheet, rect , Vec2i::new(0,0));
+                draw_state.load_buffer(entities.as_ref(), &mut vulkan_config);
                 engine_core::render3d(&mut vulkan_config, &mut vulkan_state);
             }
             _ => (),
