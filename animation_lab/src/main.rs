@@ -146,7 +146,14 @@ fn main() {
     let mut sprites = Vec::new();
     sprites.push(1);
 
-    sprite_sheet.load_sprites(sprites.clone(), Vec2i::new(48, 48));
+    let mut per_pose = Vec::new();
+    per_pose.push(1);
+    per_pose.push(2);
+    let mut timing = Vec::new();
+    timing.push(per_pose);
+    
+
+    sprite_sheet.load_sprites(sprites.clone(), timing.clone(), Vec2i::new(48, 48));
 
     let color = engine::types::Color::new(0, 0, 0, 255);
     let fig = Figure::new(
@@ -163,12 +170,13 @@ fn main() {
     let mut draw_state = DrawState::new(
         std::path::Path::new("src/loki_test.png"),
         sprites.clone(),
+        timing,
         Vec2i::new(48, 48),
         entities.as_ref(),
         Vec2i::new(WIDTH as i32, HEIGHT as i32),
     );
-    //let test = draw_state.anim_entities.get().unwrap().sprite.animations.len();
-    println!("{}", draw_state.anim_entities.len());
+    let test = draw_state.anim_entities.get(&entities[0].id).unwrap().sprite.animations[0].pose.len();
+    println!("sa{}", test);
 
     let mut now_keys = [false; 255];
     let mut prev_keys = now_keys.clone();
@@ -220,7 +228,7 @@ fn main() {
             },
             Event::MainEventsCleared => {
                 if now_keys[VirtualKeyCode::Right as usize]{
-                    draw_state.trigger_animation(entities[0].clone(), 0);
+                    draw_state.trigger_animation(&entities[0], 0);
                 }
                 // now_keys are officially "old" now, after update
                 prev_keys.copy_from_slice(&now_keys);

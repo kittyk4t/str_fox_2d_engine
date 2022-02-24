@@ -31,8 +31,8 @@ impl Animation{
     fn new() -> Animation{ Animation{id: 0, pose:Vec::<Image>::new(), 
         priority:0, timing:Vec::<usize>::new(), cycle:false, retrigger: false, pause: false}}
 
-    fn new_poses(id: usize, pose: Vec<Image>) -> Animation{Animation{id, pose, priority:0, 
-        timing: Vec::<usize>::new(), cycle: false, retrigger: false, pause: false}}
+    fn new_poses(id: usize, pose: Vec<Image>, timing: Vec<usize>) -> Animation{Animation{id, pose, priority:0, 
+        timing, cycle: false, retrigger: false, pause: false}}
 }
 #[derive(Clone)]
 pub struct AnimationState{
@@ -44,9 +44,12 @@ pub struct AnimationState{
 }
 
 impl AnimationState{
-    fn new(animation: Animation, is_visible: bool, frame_triggered: usize) -> AnimationState {AnimationState{animation, is_visible, frame_triggered, cur_pose:0, is_finished: false}}
+    fn new(animation: Animation, is_visible: bool, frame_triggered: usize) -> AnimationState {
+      
+        AnimationState{animation, is_visible, frame_triggered, cur_pose:0, is_finished: false}}
    
     fn tick(&mut self, cur_frame: usize) -> (){
+
         if self.frame_triggered + self.animation.timing[self.cur_pose] == cur_frame{
             self.cur_pose += 1;
 
@@ -54,6 +57,7 @@ impl AnimationState{
                 self.cur_pose = 0;
                 self.is_finished = !self.animation.cycle; 
             }
+            assert!(self.cur_pose < self.animation.timing.len());
         }
 
     }
@@ -154,7 +158,7 @@ impl SpriteSheet{
     ths is a basic load sprite, based on having a consistent pose size
     later would want to move this to reading more data from a file
    */
-     pub fn load_sprites(&mut self, animation_number: Vec<usize>, pose_size: Vec2i) {
+     pub fn load_sprites(&mut self, animation_number: Vec<usize>, timings: Vec<Vec<usize>>, pose_size: Vec2i) {
         //number of poses in a animation
         let animation_length = self.sheet.sz.x / pose_size.x;
         
@@ -163,9 +167,10 @@ impl SpriteSheet{
         let mut pos = Vec2i{x:0, y:0};
 
         //number of distinct sprites in sprite_sheet
-        for i in animation_number.iter() {
+        for (i, val) in animation_number.iter().enumerate() {
             //go by number of animations for that sprite
-            for _j in 0..*i {
+            //assert_lt!(timings.len(), *i);
+            for _j in 0..*val {
                 //number of poses in an animation
                 for _k in 0..animation_length {
                    
@@ -175,7 +180,8 @@ impl SpriteSheet{
                 
                 pos.x = 0;
                 pos.y += pose_size.y;
-                temp.push(Animation::new_poses(*i, temp_poses.clone()));
+                assert_eq!(temp_poses.len(), timings[i].len());
+                temp.push(Animation::new_poses(*val, temp_poses.clone(), timings[i].clone()));
                 temp_poses.clear();
             }
             self.sprites.push(Sprite::new(temp.clone()));
@@ -202,7 +208,9 @@ pub struct AnimationEntity{
 impl AnimationEntity{
 
     pub fn new(sprite: Sprite, states: AnimQueue, pos: Vec2, size: Vec2i, animation_layer: usize,) -> 
-    AnimationEntity{AnimationEntity{sprite, states, pos, size, animation_layer} }
+    AnimationEntity{
+        
+        AnimationEntity{sprite, states, pos, size, animation_layer} }
 
     pub fn to_Rect(&self) -> Rect {
         let image = self.pose();
@@ -218,7 +226,7 @@ impl AnimationEntity{
                 self.sprite.animations[self.sprite.default_animation].pose[0].clone()
             },
             Some(index) =>{
-                self.sprite.animations[index].pose[self.states.current_frame().unwrap()].clone()
+                self.sprite.animations[0].pose[self.states.current_frame().unwrap()].clone()
             }
         }
         
@@ -245,15 +253,16 @@ pub struct DrawState{
     tb_render: Image,
     pub sprite_sheet: SpriteSheet, //sprite sheet
     cur_frame: usize, //current frame
-    pub anim_entities: HashMap<Entity, AnimationEntity>,
+    pub anim_entities: HashMap<usize, AnimationEntity>,
 }
 
 impl DrawState{
     
-    pub fn new(sheet: &std::path::Path, anim_num: Vec<usize>, pose_sz: Vec2i, entities: &Vec<Entity>, size: Vec2i)-> DrawState {
+    pub fn new(sheet: &std::path::Path, anim_num: Vec<usize>, timing: Vec<Vec<usize>>, pose_sz: Vec2i, entities: &Vec<Entity>, size: Vec2i)-> DrawState {
+        assert_eq!(anim_num.len(), timing.len());
         let mut state = DrawState{
         tb_render: Image::new(size),
-        sprite_sheet: DrawState::load_sheet(sheet, anim_num, pose_sz),
+        sprite_sheet: DrawState::load_sheet(sheet, anim_num, timing, pose_sz),
         cur_frame: 0,
         anim_entities: HashMap::new()};
         state.init_anim_enitities(entities);
@@ -263,17 +272,17 @@ impl DrawState{
     /*
     loads sprite sheet and data about how sheet is divided into sprites
     */
-    fn load_sheet(sheet: &std::path::Path, anim_num: Vec<usize>, pose_sz: Vec2i) -> SpriteSheet
+    fn load_sheet(sheet: &std::path::Path, anim_num: Vec<usize>, timing: Vec<Vec<usize>>,pose_sz: Vec2i) -> SpriteSheet
     {
         let mut sheet = SpriteSheet::new(Image::from_file(sheet));
-        sheet.load_sprites(anim_num, pose_sz);
+        sheet.load_sprites(anim_num, timing,pose_sz);
         sheet
     }
 
     fn init_anim_enitities(&mut self, entities: &Vec<Entity>) -> (){
         for entity in entities.iter()
         {
-            self.anim_entities.insert(entity.clone(), AnimationEntity::new(
+            self.anim_entities.insert(entity.id, AnimationEntity::new(
                 self.sprite_sheet.sprites[entity.texture.index].clone(),
                 AnimQueue::new(),
                 entity.pos,
@@ -287,9 +296,9 @@ impl DrawState{
     fn sync_entity(&mut self, entities: &Vec<Entity>)-> (){
         //remove anim_entites whose entities are gone?
         for entity in entities.iter(){
-            match self.anim_entities.get_mut(entity){
+            match self.anim_entities.get_mut(&entity.id){
                 None => {
-                    self.anim_entities.insert(entity.clone(), AnimationEntity::new(
+                    self.anim_entities.insert(entity.id, AnimationEntity::new(
                 self.sprite_sheet.sprites[entity.texture.index].clone(),
                 AnimQueue::new(),
                 entity.pos,
@@ -304,7 +313,7 @@ impl DrawState{
     }
 
     pub fn trigger_animation(&mut self, entity: &Entity, anim_id: usize)-> (){
-        match self.anim_entities.get_mut(&entity){
+        match self.anim_entities.get_mut(&entity.id){
             None => {
                 let mut new = AnimationEntity::new(
                 self.sprite_sheet.sprites[entity.texture.index].clone(),
@@ -314,7 +323,7 @@ impl DrawState{
                 entity.texture.animation_layer
             );
             new.trigger_animation(anim_id, entity.texture.is_visible, self.cur_frame);
-            self.anim_entities.insert(entity, new);
+            self.anim_entities.insert(entity.id, new);
                 
             },
             Some(anim_entity) =>{
@@ -326,6 +335,7 @@ impl DrawState{
     //returns a clone of the draw state
     pub fn incr_frame(&mut self, entities: &Vec<Entity>) -> (){
         self.sync_entity(entities);
+        self.tb_render.clear(Color::new(0,0,0,255));
 
         //will need to check syntax
         for (_entity, anim_entity) in self.anim_entities.iter_mut(){
@@ -339,6 +349,7 @@ impl DrawState{
     {
         self.incr_frame(entities);
         let rect = Rect{pos:Vec2i::new(0,0), sz: self.tb_render.sz};
+        vulkan_config.fb2d.clear(Color::new(0,0,0,255));
         vulkan_config.fb2d.bitblt(&self.tb_render, rect, Vec2i::new(0,0));
     }
 }
