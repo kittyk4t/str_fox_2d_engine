@@ -4,10 +4,6 @@ use engine::animation::*;
 use engine::engine_core::*;
 use engine::image::*;
 use engine::*;
-use serde;
-use serde::Deserialize;
-use serde_json;
-use std::fs;
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -228,6 +224,13 @@ fn main() {
             },
             Event::MainEventsCleared => {
                 if now_keys[VirtualKeyCode::Right as usize]{
+                    let old = entities[0].pos;
+                    entities[0].pos = Vec2::new(old.x +1.0, old.y);
+                }
+                if now_keys[VirtualKeyCode::Left as usize]{
+                    
+                }
+                if now_keys[VirtualKeyCode::Down as usize]{
                     draw_state.trigger_animation(&entities[0], 0);
                 }
                 // now_keys are officially "old" now, after update

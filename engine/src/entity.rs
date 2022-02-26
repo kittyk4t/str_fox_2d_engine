@@ -70,11 +70,9 @@ on_collision () ->
 
 abstract on collision method
 */
-use serde;
-use serde::Deserialize;
-use serde_json;
+
 use super::types::*;
-use std::hash::{Hash, Hasher};
+use std::hash::{Hash};
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub enum Team {

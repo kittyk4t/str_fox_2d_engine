@@ -1,9 +1,3 @@
-use std::sync::Arc;
-use serde;
-use serde::Deserialize;
-use serde_json;
-use std::fs;
-use std::hash::{Hash, Hasher};
 use std::collections::HashMap;
 
 use super::types::*; 
@@ -215,7 +209,7 @@ impl AnimationEntity{
     pub fn to_Rect(&self) -> Rect {
         let image = self.pose();
         
-        Rect::new(self.pos.to_Vec2i(), image.sz)
+        Rect::new(Vec2i::new(0,0), image.sz)
         
     }
     //returns current pose
@@ -349,7 +343,6 @@ impl DrawState{
     {
         self.incr_frame(entities);
         let rect = Rect{pos:Vec2i::new(0,0), sz: self.tb_render.sz};
-        vulkan_config.fb2d.clear(Color::new(0,0,0,255));
         vulkan_config.fb2d.bitblt(&self.tb_render, rect, Vec2i::new(0,0));
     }
 }
