@@ -136,6 +136,18 @@ impl Figure //LOOK HERE
     }
 }
 
+fn sheet_info() -> SheetData{
+    let anim_num = vec![1, 1, 1, 3];
+    let length = vec![vec![6], vec![6], vec![6],vec![2, 5, 5]];
+    let timing = vec![vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], 
+    vec![1, 2], vec![1,2,3,4,5], vec![1,2,3,4,5]];
+    let cycles = vec![vec![false], vec![false], vec![false], vec![false, false, false]];
+    let retriggers = vec![vec![false], vec![false], vec![false], vec![true, true, true]];
+    let prior = vec![vec![1], vec![6], vec![6],vec![2, 5, 5]];
+
+    SheetData::new(anim_num, length, timing, cycles, retriggers, prior)
+}
+
 fn main() {
     let mut sprite_sheet =
         SpriteSheet::new(Image::from_file(std::path::Path::new("src/loki_test.png")));
@@ -167,8 +179,8 @@ fn main() {
     entities.push(fig.to_entity());
 
     let mut draw_state = DrawState::new(
-        std::path::Path::new("src/loki_test.png"),
-        data.clone(),
+        std::path::Path::new("src/test_sheet.png"),
+        sheet_info(),
         Vec2i::new(48, 48),
         std::path::Path::new("src/test_back.png"),
         entities.as_ref(),

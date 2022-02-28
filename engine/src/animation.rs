@@ -297,9 +297,9 @@ impl SpriteSheet{
                 
                 pos.x = 0;
                 pos.y += pose_size.y;
-                assert_eq!(temp_poses.len(), data.timings[i].len());
+                assert_eq!(temp_poses.len(), data.timings[i+j].len());
                 let temp_anim = Animation::new_all(*val, temp_poses.clone(),
-                 data.priorities[i][j], data.timings[i].clone(), data.cycles[i][j], 
+                 data.priorities[i][j], data.timings[i +j].clone(), data.cycles[i][j], 
                  data.retriggers[i][j]);
                 
                 temp.push(temp_anim);
