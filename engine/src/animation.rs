@@ -276,6 +276,7 @@ make the images that are displayed match what has occured in the game */
 #[derive(Clone)]
 pub struct DrawState{
     tb_render: Image,
+    background: Image,
     pub sprite_sheet: SpriteSheet, //sprite sheet
     cur_frame: usize, //current frame
     pub anim_entities: HashMap<usize, AnimationEntity>,
@@ -283,9 +284,11 @@ pub struct DrawState{
 
 impl DrawState{
     
-    pub fn new(sheet: &std::path::Path, sheet_data: SheetData, pose_sz: Vec2i, entities: &Vec<Entity>, size: Vec2i)-> DrawState {
+    pub fn new(sheet: &std::path::Path, sheet_data: SheetData, 
+        pose_sz: Vec2i, background: &std::path::Path, entities: &Vec<Entity>, size: Vec2i)-> DrawState {
         let mut state = DrawState{
         tb_render: Image::new(size),
+        background: Image::from_file(background),
         sprite_sheet: DrawState::load_sheet(sheet, sheet_data, pose_sz),
         cur_frame: 0,
         anim_entities: HashMap::new()};
@@ -336,6 +339,13 @@ impl DrawState{
         }
     }
 
+    //resets tb_render to background
+    fn reset(&mut self) -> (){
+        self.tb_render.clear(Color::new(0,0,0,255));
+        self.tb_render.bitblt(&self.background, Rect::new(Vec2i::new(0,0), self.background.sz), Vec2i::new(0,0));
+
+    }
+
     pub fn trigger_animation(&mut self, entity: &Entity, anim_id: usize)-> (){
         match self.anim_entities.get_mut(&entity.id){
             None => {
@@ -359,7 +369,7 @@ impl DrawState{
     //returns a clone of the draw state
     pub fn incr_frame(&mut self, entities: &Vec<Entity>) -> (){
         self.sync_entity(entities);
-        self.tb_render.clear(Color::new(0,0,0,255));
+        self.reset();
 
         //will need to check syntax
         for (_entity, anim_entity) in self.anim_entities.iter_mut(){

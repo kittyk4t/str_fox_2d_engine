@@ -170,6 +170,7 @@ fn main() {
         std::path::Path::new("src/loki_test.png"),
         data.clone(),
         Vec2i::new(48, 48),
+        std::path::Path::new("src/test_back.png"),
         entities.as_ref(),
         Vec2i::new(WIDTH as i32, HEIGHT as i32),
     );
