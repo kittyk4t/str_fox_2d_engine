@@ -147,9 +147,12 @@ fn main() {
     per_pose.push(2);
     let mut timing = Vec::new();
     timing.push(per_pose);
+
+    let data = SheetData::new(sprites.clone(), vec![vec![2]], timing.clone(), 
+    vec![vec![false]], vec![vec![true]], vec![vec![2]]);
     
 
-    sprite_sheet.load_sprites(sprites.clone(), timing.clone(), Vec2i::new(48, 48));
+    sprite_sheet.load_sprites(data.clone(), Vec2i::new(48, 48));
 
     let color = engine::types::Color::new(0, 0, 0, 255);
     let fig = Figure::new(
@@ -165,8 +168,7 @@ fn main() {
 
     let mut draw_state = DrawState::new(
         std::path::Path::new("src/loki_test.png"),
-        sprites.clone(),
-        timing,
+        data.clone(),
         Vec2i::new(48, 48),
         entities.as_ref(),
         Vec2i::new(WIDTH as i32, HEIGHT as i32),

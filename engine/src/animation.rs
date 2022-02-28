@@ -4,6 +4,26 @@ use super::types::*;
 use super::image::*;
 use super::entity::*;
 use super::engine_core::*;
+
+#[derive(Clone)]
+pub struct SheetData{
+    pub animation_number: Vec<usize>,
+    pub animation_length: Vec<Vec<usize>>,
+    pub timings: Vec<Vec<usize>>,
+    pub cycles: Vec<Vec<bool>>,
+    pub retriggers: Vec<Vec<bool>>,
+    pub priorities: Vec<Vec<usize>>,
+}
+
+impl SheetData{
+    pub fn new(animation_number: Vec<usize>, animation_length: Vec<Vec<usize>>, 
+        timings:Vec<Vec<usize>>, cycles:  Vec<Vec<bool>>, 
+        retriggers:  Vec<Vec<bool>>, priorities: Vec<Vec<usize>>) -> SheetData{
+            SheetData{
+                animation_number, animation_length, timings, cycles, retriggers, priorities,
+            }
+        }
+}
 /*
 This is a struct that is used as a reference point for instances of Animation entites,
 it holds the difference images that go together to form 1 animated action, as well as the 
@@ -27,6 +47,13 @@ impl Animation{
 
     fn new_poses(id: usize, pose: Vec<Image>, timing: Vec<usize>) -> Animation{Animation{id, pose, priority:0, 
         timing, cycle: false, retrigger: false, pause: false}}
+
+    fn new_all(id: usize, pose: Vec<Image>,  priority: usize, timing: Vec<usize>, cycle:bool,
+    retrigger: bool,) -> Animation{Animation{id, pose, priority, 
+        timing, cycle, retrigger, pause: false}}
+
+    
+    
 }
 #[derive(Clone)]
 pub struct AnimationState{
@@ -152,21 +179,21 @@ impl SpriteSheet{
     ths is a basic load sprite, based on having a consistent pose size
     later would want to move this to reading more data from a file
    */
-     pub fn load_sprites(&mut self, animation_number: Vec<usize>, timings: Vec<Vec<usize>>, pose_size: Vec2i) {
+     pub fn load_sprites(&mut self, data: SheetData, pose_size: Vec2i) {
         //number of poses in a animation
-        let animation_length = self.sheet.sz.x / pose_size.x;
+        //let animation_length = self.sheet.sz.x / pose_size.x;
         
         let mut temp = Vec::<Animation>::new();
         let mut temp_poses = Vec::<Image>::new();
         let mut pos = Vec2i{x:0, y:0};
 
         //number of distinct sprites in sprite_sheet
-        for (i, val) in animation_number.iter().enumerate() {
+        for (i, val) in data.animation_number.iter().enumerate() {
             //go by number of animations for that sprite
             //assert_lt!(timings.len(), *i);
-            for _j in 0..*val {
+            for j in 0..*val {
                 //number of poses in an animation
-                for _k in 0..animation_length {
+                for _k in 0..data.animation_length[i][j] {
                    
                     temp_poses.push(self.sheet.sub_image(pos, pose_size));
                     pos.x += pose_size.x;
@@ -174,8 +201,12 @@ impl SpriteSheet{
                 
                 pos.x = 0;
                 pos.y += pose_size.y;
-                assert_eq!(temp_poses.len(), timings[i].len());
-                temp.push(Animation::new_poses(*val, temp_poses.clone(), timings[i].clone()));
+                assert_eq!(temp_poses.len(), data.timings[i].len());
+                let temp_anim = Animation::new_all(*val, temp_poses.clone(),
+                 data.priorities[i][j], data.timings[i].clone(), data.cycles[i][j], 
+                 data.retriggers[i][j]);
+                
+                temp.push(temp_anim);
                 temp_poses.clear();
             }
             self.sprites.push(Sprite::new(temp.clone()));
@@ -252,11 +283,10 @@ pub struct DrawState{
 
 impl DrawState{
     
-    pub fn new(sheet: &std::path::Path, anim_num: Vec<usize>, timing: Vec<Vec<usize>>, pose_sz: Vec2i, entities: &Vec<Entity>, size: Vec2i)-> DrawState {
-        assert_eq!(anim_num.len(), timing.len());
+    pub fn new(sheet: &std::path::Path, sheet_data: SheetData, pose_sz: Vec2i, entities: &Vec<Entity>, size: Vec2i)-> DrawState {
         let mut state = DrawState{
         tb_render: Image::new(size),
-        sprite_sheet: DrawState::load_sheet(sheet, anim_num, timing, pose_sz),
+        sprite_sheet: DrawState::load_sheet(sheet, sheet_data, pose_sz),
         cur_frame: 0,
         anim_entities: HashMap::new()};
         state.init_anim_enitities(entities);
@@ -266,10 +296,10 @@ impl DrawState{
     /*
     loads sprite sheet and data about how sheet is divided into sprites
     */
-    fn load_sheet(sheet: &std::path::Path, anim_num: Vec<usize>, timing: Vec<Vec<usize>>,pose_sz: Vec2i) -> SpriteSheet
+    fn load_sheet(sheet: &std::path::Path, sheet_data: SheetData, pose_sz: Vec2i) -> SpriteSheet
     {
         let mut sheet = SpriteSheet::new(Image::from_file(sheet));
-        sheet.load_sprites(anim_num, timing,pose_sz);
+        sheet.load_sprites(sheet_data,pose_sz);
         sheet
     }
 
