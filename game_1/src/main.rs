@@ -1,4 +1,7 @@
 use engine::*;
+use engine::animation::*;
+use engine::entity::*;
+
 use serde;
 use serde::Deserialize;
 use serde_json;
