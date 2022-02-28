@@ -124,6 +124,35 @@ pub struct Entity {
     //pub hurt_box: HurtBox,
     pub texture: Texture,
 }
+impl Entity{
+   /* pub fn compute_distance(self: &mut Self) -> () {
+        self.vel.x += self.acc.x;
+        self.pos.x += self.vel.x;
+
+        if (self.pos.x + self.size.x) as usize > WIDTH {
+            self.pos.x = (WIDTH as f32) - self.size.x - 1.0;
+            self.acc.x *= -0.5; //mimics energy lost from hitting something
+            self.vel.x *= -1.0;
+        } else if self.pos.x as usize == 0 {
+            self.acc.x *= -0.5; //mimics energy lost from hitting something
+            self.vel.x *= -1.0;
+        }
+
+        self.vel.y += self.acc.y * self.pos.y;
+        self.pos.y += self.vel.y * self.pos.y;
+
+        if (self.pos.y + self.size.y) as usize > HEIGHT {
+            self.pos.y = (HEIGHT as f32) - self.size.y - 1.0;
+            self.acc.y *= -0.5;
+            self.vel.y *= -1.0;
+        } else if self.pos.y as usize == 0 {
+            self.acc.y *= -0.5;
+            self.vel.y *= -1.0;
+        }
+    }*/
+
+}
+
 
 
 
