@@ -177,6 +177,14 @@ fn main() {
     let test = draw_state.anim_entities.get(&entities[0].id).unwrap().sprite.animations[0].pose.len();
     println!("sa{}", test);
 
+    let c_time = vec![2,2,2,2,2,2,
+    1,1,1,1,1,1,
+    1,1,1,1,1,1,
+    1,1,1,1,1,1,
+    1,1,1,1,1,1,
+    1,1,1,1,1 ];
+    let mut cutscene = Cutscene::new(std::path::Path::new("src/test.png"), 35, Vec2i::new(240, 240), c_time, false);
+
     let mut now_keys = [false; 255];
     let mut prev_keys = now_keys.clone();
     let mut mouse_press = [false; 3]; //LOOK HERE
@@ -235,14 +243,14 @@ fn main() {
                 }
                 if now_keys[VirtualKeyCode::Down as usize]{
                     draw_state.trigger_animation(&entities[0], 0);
+                    cutscene.trigger();
                 }
                 // now_keys are officially "old" now, after update
                 prev_keys.copy_from_slice(&now_keys);
-
-            
+                cutscene.load_buffer(&mut vulkan_config);
                 //let rect = Rect::new(Vec2i::new(0,0), Vec2i::new(96, 48));
                 //vulkan_config.fb2d.bitblt(&draw_state.sprite_sheet.sheet, rect , Vec2i::new(0,0));
-                draw_state.load_buffer(entities.as_ref(), &mut vulkan_config);
+                //draw_state.load_buffer(entities.as_ref(), &mut vulkan_config);
                 engine_core::render3d(&mut vulkan_config, &mut vulkan_state);
             }
             _ => (),

@@ -97,16 +97,20 @@ impl Cutscene{
         //checks that the image can actually hold that number
         assert!((plates_across*plates_high) as usize >= plate_num);
 
-        for _i in 0..plate_num{
-            for _j in 0..plates_across{
-                temp.push(main.sub_image(pos, plate_size));
-                pos.x += plate_size.x;
+        for i in 0..plates_high{
+            for j in 0..plates_across{
+                pos.x = j * plate_size.x;
+                pos.y = i * plate_size.y;
+
+                if plate_num > temp.len() {
+                    temp.push(main.sub_image(pos, plate_size));
+                }
+                else{
+                    break;
+                }
             }
-            pos.x = 0;
-            pos.y += plate_size.y;
         }
         temp
-
     }
 
     pub fn trigger(&mut self) -> ()
