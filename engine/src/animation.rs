@@ -55,6 +55,98 @@ impl Animation{
     
     
 }
+/*
+A whole buffer animation, is seperate struct, because it greatly 
+    paired down so doesn't need the overhead and complexity of a regular sprite/animation
+*/
+
+#[derive(Clone)]
+pub struct Cutscene{
+    plates: Vec<Image>,
+    is_active: bool,
+    frame_triggered: usize,
+    cur_frame: usize,
+    cur_plate: usize,
+    timing: Vec<usize>,
+    cycle: bool,
+}
+
+impl Cutscene{
+    pub fn new(plates: &std::path::Path, plate_num: usize, 
+        plate_size: Vec2i, timing: Vec<usize>, cycle: bool) -> Cutscene{
+            Cutscene{
+                plates: Cutscene::load_plates(plates, plate_num, plate_size), 
+                is_active: false,
+                frame_triggered: 0,
+                cur_frame: 0,
+                cur_plate: 0,
+                timing,
+                cycle
+            }
+        }
+
+    fn load_plates(plates: &std::path::Path, plate_num: usize, plate_size: Vec2i) -> Vec<Image>{
+        let mut temp = Vec::new();
+        let main = Image::from_file(plates);
+
+        let plates_across = main.sz.x / plate_size.x; 
+        let plates_high = main.sz.y / plate_size.y; 
+
+        let mut pos = Vec2i::new(0,0);
+
+        //checks that the image can actually hold that number
+        assert!((plates_across*plates_high) as usize >= plate_num);
+
+        for _i in 0..plate_num{
+            for _j in 0..plates_across{
+                temp.push(main.sub_image(pos, plate_size));
+                pos.x += plate_size.x;
+            }
+            pos.x = 0;
+            pos.y += plate_size.y;
+        }
+        temp
+
+    }
+
+    pub fn trigger(&mut self) -> ()
+    {
+        self.is_active = true;
+        self.frame_triggered = self.cur_frame;
+    }
+
+    fn tick(&mut self) -> (){
+
+        if self.cur_frame - self.frame_triggered == self.timing[self.cur_plate]{
+            self.cur_plate += 1; 
+
+            if self.cur_plate >= self.plates.len()
+            {
+                self.cur_plate = 0;
+
+                self.is_active = self.cycle;
+            }
+        }
+    }
+
+    fn incr_frame(&mut self) -> (){
+        self.cur_frame += 1;
+        if self.is_active{
+            self.tick();
+        }
+        
+    }
+
+    pub fn load_buffer(&mut self, vulkan_config:  &mut VulkanConfig) -> ()
+    {
+        self.incr_frame();
+        let rect = Rect{pos:Vec2i::new(0,0), sz: self.plates[self.cur_plate].sz};
+        vulkan_config.fb2d.bitblt(&self.plates[self.cur_plate], rect, Vec2i::new(0,0));
+    }
+
+}
+
+
 #[derive(Clone)]
 pub struct AnimationState{
     animation: Animation, //index for sprite animations
