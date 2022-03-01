@@ -26,7 +26,7 @@ use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 
-pub const WIDTH: usize = 320;
+pub const WIDTH: usize = 240;
 pub const HEIGHT: usize = 240;
 
 pub trait Game {
@@ -269,7 +269,12 @@ impl FramebufferScheme {
             device.clone(),
             BufferUsage::transfer_source(),
             false,
-            (0..WIDTH * HEIGHT).map(|_| Color(255_u8, 0_u8, 0_u8, 0_u8)),
+            (0..WIDTH * HEIGHT).map(|_| Color {
+            r: 255_u8,
+            g: 0_u8,
+            b: 0_u8,
+            a: 0_u8,
+        }),
         )
         .unwrap();
         // Here's our (2D drawing) framebuffer.

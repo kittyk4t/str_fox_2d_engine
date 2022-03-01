@@ -262,7 +262,7 @@ fn main() {
                 cutscene.load_buffer(&mut vulkan_config);
                 let rect = Rect::new(Vec2i::new(0,0), Vec2i::new(96, 48));
                 vulkan_config.fb2d.bitblt(&draw_state.sprite_sheet.sheet, rect , Vec2i::new(0,0));
-                draw_state.load_buffer(entities.as_ref(), &mut vulkan_config);
+                draw_state.load_buffer(entities.as_ref(), &mut vulkan_config.fb2d);
                 engine_core::render3d(&mut vulkan_config, &mut vulkan_state);
             }
             _ => (),
