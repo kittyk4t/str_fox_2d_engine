@@ -125,7 +125,7 @@ impl Cutscene{
 
     fn tick(&mut self) -> (){
 
-        if self.timing[self.cur_plate] + self.frame_triggered >= self.cur_frame{
+        if  self.cur_frame - self.frame_triggered == self.timing[self.cur_plate]{
             self.cur_plate += 1; 
             self.frame_triggered = self.cur_frame;
 
@@ -139,7 +139,7 @@ impl Cutscene{
     }
 
     pub fn incr_frame(&mut self) -> (){
-        dbg!(self.cur_frame, self.is_active, self.frame_triggered, self.timing[self.cur_plate]);
+       // dbg!(self.cur_frame, self.is_active, self.frame_triggered, self.timing[self.cur_plate]);
         self.cur_frame += 1;
         if self.is_active{
             self.tick();
@@ -149,7 +149,7 @@ impl Cutscene{
 
     pub fn load_buffer(&mut self, vulkan_config:  &mut VulkanConfig) -> ()
     {
-        //self.incr_frame();
+        self.incr_frame();
         let rect = Rect{pos:Vec2i::new(0,0), sz: self.plates[self.cur_plate].sz};
         vulkan_config.fb2d.bitblt(&self.plates[self.cur_plate], rect, Vec2i::new(0,0));
     }
