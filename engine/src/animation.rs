@@ -475,11 +475,11 @@ impl DrawState{
         self.cur_frame += 1;
     }
 
-    pub fn load_buffer(&mut self, entities: &Vec<Entity>, vulkan_config:  &mut VulkanConfig) -> ()
+    pub fn load_buffer(&mut self, entities: &Vec<Entity>, fb2d:  &mut Image) -> ()
     {
         self.incr_frame(entities);
         let rect = Rect{pos:Vec2i::new(0,0), sz: self.tb_render.sz};
-        vulkan_config.fb2d.bitblt(&self.tb_render, rect, Vec2i::new(0,0));
+        fb2d.bitblt(&self.tb_render, rect, Vec2i::new(0,0));
     }
 }
 
