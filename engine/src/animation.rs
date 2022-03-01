@@ -121,7 +121,7 @@ impl Cutscene{
 
     fn tick(&mut self) -> (){
 
-        if self.cur_frame - self.frame_triggered == self.timing[self.cur_plate]{
+        if self.timing[self.cur_plate] + self.frame_triggered == self.cur_frame{
             self.cur_plate += 1; 
 
             if self.cur_plate >= self.plates.len()

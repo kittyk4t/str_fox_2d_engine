@@ -176,7 +176,18 @@ fn main() {
     );
 
     let mut entities = Vec::new();
-    entities.push(fig.to_entity());
+    //entities.push(fig.to_entity());
+    entities.push(Entity{
+        id: 0,
+        pos: Vec2::new(0.0, 0.0),
+        vel:  Vec2::new(0.0, 0.0),
+        size: Vec2i::new(48, 48),
+        texture: Texture{
+        index: 3,
+        is_visible: true,
+        animation_layer: 1,
+    },
+    });
 
     let mut draw_state = DrawState::new(
         std::path::Path::new("src/test_sheet.png"),
@@ -189,7 +200,7 @@ fn main() {
     let test = draw_state.anim_entities.get(&entities[0].id).unwrap().sprite.animations[0].pose.len();
     println!("sa{}", test);
 
-    let c_time = vec![2,2,2,2,2,2,
+    let c_time = vec![1,1,1,1,1,1,
     1,1,1,1,1,1,
     1,1,1,1,1,1,
     1,1,1,1,1,1,
@@ -251,18 +262,18 @@ fn main() {
                     entities[0].pos = Vec2::new(old.x +1.0, old.y);
                 }
                 if now_keys[VirtualKeyCode::Left as usize]{
-                    
+                   
                 }
                 if now_keys[VirtualKeyCode::Down as usize]{
-                    draw_state.trigger_animation(&entities[0], 0);
+                    //draw_state.trigger_animation(&entities[0], 0);
                     cutscene.trigger();
                 }
                 // now_keys are officially "old" now, after update
                 prev_keys.copy_from_slice(&now_keys);
                 cutscene.load_buffer(&mut vulkan_config);
-                let rect = Rect::new(Vec2i::new(0,0), Vec2i::new(96, 48));
-                vulkan_config.fb2d.bitblt(&draw_state.sprite_sheet.sheet, rect , Vec2i::new(0,0));
-                draw_state.load_buffer(entities.as_ref(), &mut vulkan_config.fb2d);
+               // let rect = Rect::new(Vec2i::new(0,0), Vec2i::new(96, 48));
+                //vulkan_config.fb2d.bitblt(&draw_state.sprite_sheet.sheet, rect , Vec2i::new(0,0));
+                //draw_state.load_buffer(entities.as_ref(), &mut vulkan_config.fb2d);
                 engine_core::render3d(&mut vulkan_config, &mut vulkan_state);
             }
             _ => (),
