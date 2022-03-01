@@ -6,6 +6,7 @@ use engine::image::*;
 use engine::*;
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
+use std::time::Instant;
 
 //ADD IMPORTS FROM ENGINE
 
@@ -151,7 +152,7 @@ fn sheet_info() -> SheetData{
 fn main() {
     let mut sprite_sheet =
         SpriteSheet::new(Image::from_file(std::path::Path::new("src/loki_test.png")));
-    let mut sprites = Vec::new();
+    /*let mut sprites = Vec::new();
     sprites.push(1);
 
     let mut per_pose = Vec::new();
@@ -173,7 +174,7 @@ fn main() {
         Vec2::new(0.0, 0.0),
         Vec2::new(0.0, 0.0),
         sprite_sheet.sprites[0].clone(),
-    );
+    );*/
 
     let mut entities = Vec::new();
     //entities.push(fig.to_entity());
@@ -217,6 +218,11 @@ fn main() {
 
     let (mut vulkan_config, mut vulkan_state) =
         engine_core::vulkan_init(&event_loop, WIDTH, HEIGHT);
+    
+    let mut acc = 0.0_f32;
+    let mut prev_t = Instant::now();
+    // Let's clock the game at 60 simulation steps per second
+   const SIM_DT : f32 = 1.0/30.0;
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -257,7 +263,12 @@ fn main() {
                 }
             },
             Event::MainEventsCleared => {
-                if now_keys[VirtualKeyCode::Right as usize]{
+                let elapsed = prev_t.elapsed().as_secs_f32();
+                //println!("{}", elapsed);
+                acc += elapsed;
+                prev_t = Instant::now();
+                while acc >= SIM_DT {
+                    if now_keys[VirtualKeyCode::Right as usize]{
                     let old = entities[0].pos;
                     entities[0].pos = Vec2::new(old.x +1.0, old.y);
                 }
@@ -270,10 +281,16 @@ fn main() {
                 }
                 // now_keys are officially "old" now, after update
                 prev_keys.copy_from_slice(&now_keys);
-                cutscene.load_buffer(&mut vulkan_config);
+                cutscene.incr_frame();
+                                
+                acc -= SIM_DT;
+                
+            }
+                
                // let rect = Rect::new(Vec2i::new(0,0), Vec2i::new(96, 48));
                 //vulkan_config.fb2d.bitblt(&draw_state.sprite_sheet.sheet, rect , Vec2i::new(0,0));
                 //draw_state.load_buffer(entities.as_ref(), &mut vulkan_config.fb2d);
+                cutscene.load_buffer(&mut vulkan_config);  
                 engine_core::render3d(&mut vulkan_config, &mut vulkan_state);
             }
             _ => (),
