@@ -110,22 +110,22 @@ pub trait Colliable {
 pub struct HurtBox {
     pos: Vec2,
     size: Vec2,
-    collision_layer: usize,
     check_collison: bool,
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Entity {
     pub id: usize,
-    //pub ent_type: EntityType,
+    pub ent_type: EntityType,
     pub pos: Vec2,
     pub vel: Vec2,
+    pub acc: Vec2,
     pub size: Vec2i,
-    //pub hurt_box: HurtBox,
+    pub hurt_box: HurtBox,
     pub texture: Texture,
 }
 impl Entity{
-   /* pub fn compute_distance(self: &mut Self) -> () {
+  /* pub fn compute_distance(self: &mut Self) -> () {
         self.vel.x += self.acc.x;
         self.pos.x += self.vel.x;
 

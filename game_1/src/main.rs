@@ -11,38 +11,26 @@ use winit::event_loop::{ControlFlow, EventLoop};
 const WIDTH: usize = 240;
 const HEIGHT: usize = 240;
 
-struct Assets {
-    image_paths: Vec<std::path::Path>,
-    sheet_data: SheetData,
-    obj_size: Vec2i,
-    entity_size: Vec2i,
+pub enum GameMode{
+    Startscene,
+    Game,
+    Endscene
+}
+
+struct Graphics {
+    draw_state: DrawState,
+    cutscenes: Vec<Cutscene>
 }
 
 struct World{
+    mode: GameMode,
     player: Entity,
     enemy: Vec<Entity>,
     projectiles: Vec<Entity>,
     score: u8,
-    time: f32,
-    interval: f64,
-    frame: usize,
     level: usize,
 }
-impl World{
-    fn new() -> World {
-        World{
-             player: Entity::new(),
-    enemy: Vec::<Entity>::new(),
-    projectiles: Vec::<Entity>::new(),
-    score: 0,
-    time: 0.0, //might have a timer instance of something
-    interval: 0.0,
-    frame: 0,
-    level: 0,
 
-        }
-    }
-}
 
 //NOTES TO SELF, might change from having entity type, to just
 //creating wrapper structs for entities in game
@@ -58,21 +46,20 @@ fn main() {
 }
 
 impl engine::Game for Game {
-    type Assets = Assets;
+    type Assets = Graphics;
     type GameState = World;
-    type DrawState = animation::DrawState;
-    fn new() -> (State, Assets, DrawState) {
-        let assets = Assets {
+    fn new() -> (World, Graphics) {
+        let assets = Graphics {
             
         };
         let state = World {
            
         };
         let draw_state = DrawState::new()//add params
-        (state, assets, draw_state)
+        (state, assets)
     }
 
-    fn update(state: &mut World, assets: &mut Assets, input: &engine::Input) {
+    fn update(state: &mut World, assets: &mut Graphics, input: &engine::Input) {
         use winit::event::VirtualKeyCode;
         
         //process and react to inputs
@@ -80,7 +67,7 @@ impl engine::Game for Game {
         //trigger animations
     }
 
-    fn render(state: &mut World, draw: &mut DrawState, assets: &mut Assets, fb2d: &mut Image) {
+    fn render(state: &mut World, assets: &mut Graphics, fb2d: &mut Image) {
         //could add if in mode, and have render cutscene/drawstate?
         draw.load_buffer(state.entities, fb2d);
     }
