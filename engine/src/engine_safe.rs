@@ -25,6 +25,7 @@ use super::types::*;
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
+use std::time::Instant;
 
 pub const WIDTH: usize = 240;
 pub const HEIGHT: usize = 240;
@@ -88,6 +89,10 @@ pub fn go<GameT: Game + 'static>() {
     let event_loop = EventLoop::new();
     let (mut vulkan_config, mut vulkan_state) = vulkan_init(&event_loop);
     let mut input = Input::new();
+    let mut acc = 0.0_f32;
+    let mut prev_t = Instant::now();
+    // Let's clock the game at 30 simulation steps per second
+   const SIM_DT : f32 = 1.0/30.0;
     event_loop.run(move |event, _, control_flow| {
         match event {
             // Nested match patterns are pretty useful---see if you can figure out what's going on in this match.
@@ -116,12 +121,23 @@ pub fn go<GameT: Game + 'static>() {
                 input.handle_key_event(in_event);
             }
             Event::MainEventsCleared => {
-                GameT::update(&mut state, &mut assets, &input);
-                GameT::render(
+                let elapsed = prev_t.elapsed().as_secs_f32();
+                //println!("{}", elapsed);
+                acc += elapsed;
+                prev_t = Instant::now();
+                while acc >= SIM_DT {
+                    GameT::update(&mut state, &mut assets, &input);
+                    GameT::render(
                     &mut state,
                     &mut assets,
                     &mut vulkan_state.framebuffer_data.fb2d,
                 );
+                
+                                
+                acc -= SIM_DT;
+                
+            }
+                
                 render3d(&mut vulkan_config, &mut vulkan_state);
                 input.next_frame();
             }

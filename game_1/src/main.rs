@@ -72,7 +72,7 @@ impl engine::Game for Game {
         (state, assets, draw_state)
     }
 
-    fn update(state: &mut State, assets: &mut Assets, input: &engine::Input) {
+    fn update(state: &mut World, assets: &mut Assets, input: &engine::Input) {
         use winit::event::VirtualKeyCode;
         
         //process and react to inputs
@@ -80,7 +80,7 @@ impl engine::Game for Game {
         //trigger animations
     }
 
-    fn render(state: &mut State, draw: &mut DrawState, assets: &mut Assets, fb2d: &mut Image) {
+    fn render(state: &mut World, draw: &mut DrawState, assets: &mut Assets, fb2d: &mut Image) {
         //could add if in mode, and have render cutscene/drawstate?
         draw.load_buffer(state.entities, fb2d);
     }

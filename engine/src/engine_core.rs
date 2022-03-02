@@ -27,7 +27,7 @@ use winit::window::{Window, WindowBuilder};
 use super::image::Image;
 use super::types::*;
 
-const WIDTH: usize = 320;
+const WIDTH: usize = 240;
 const HEIGHT: usize = 240;
 
 struct Assets {
