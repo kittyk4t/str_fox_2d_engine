@@ -219,8 +219,9 @@ impl AnimationState{
    
     fn tick(&mut self, cur_frame: usize) -> (){
 
-        if self.frame_triggered + self.animation.timing[self.cur_pose] == cur_frame{
+        if cur_frame - self.frame_triggered == self.animation.timing[self.cur_pose]{
             self.cur_pose += 1;
+            self.frame_triggered = cur_frame;
 
             if self.cur_pose >= self.animation.pose.len(){
                 self.cur_pose = 0;
@@ -254,6 +255,7 @@ impl AnimQueue {
             if retrigger {
                 //HAVE SOMEONE LOOK AT THIS
                 (p, anim.clone(), pause)
+
             } else {
                 (p, qanim, pause)
             }
@@ -425,7 +427,7 @@ pub struct DrawState{
     tb_render: Image,
     background: Image,
     pub sprite_sheet: SpriteSheet, //sprite sheet
-    cur_frame: usize, //current frame
+    pub cur_frame: usize, //current frame
     pub anim_entities: HashMap<usize, AnimationEntity>,
 }
 

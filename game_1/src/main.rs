@@ -9,8 +9,6 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use rand::{thread_rng, Rng};
 
 
-const WIDTH: usize = 240;
-const HEIGHT: usize = 240;
 const WORLD_SIZE: (i32, i32) = (240, 240);
 const DT: f32 = 1.0/30.0;
 
@@ -57,10 +55,10 @@ fn sheet_info() -> SheetData{
     let anim_num = vec![1, 1, 1, 3];
     let length = vec![vec![6], vec![6], vec![6],vec![2, 5, 5]];
     let timing = vec![vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], 
-    vec![1, 2], vec![1,2,3,4,5], vec![1,2,3,4,5]];
+    vec![2, 2], vec![1,2,3,4,5], vec![1,2,3,4,5]];
     let cycles = vec![vec![false], vec![false], vec![false], vec![false, false, false]];
     let retriggers = vec![vec![false], vec![false], vec![false], vec![true, true, true]];
-    let prior = vec![vec![1], vec![6], vec![6],vec![2, 5, 5]];
+    let prior = vec![vec![1], vec![6], vec![6],vec![0, 5, 5]];
 
     SheetData::new(anim_num, length, timing, cycles, retriggers, prior)
 }
@@ -107,13 +105,13 @@ impl World{
         let mut player = Entity{
              id: 0,
     ent_type: EntityType::Player,
-    pos: Vec2::new(WIDTH as f32 / 2.0, HEIGHT as f32/ 2.0),
+    pos: Vec2::new(WIDTH as f32 / 2.0, 0.0),
     vel: Vec2::new(0.0, 0.0),
     acc: Vec2::new(0.0, 0.0),
     size: Vec2i::new(48,48),
     hurt_box: HurtBox::new(Vec2i::new(24, 24)),
     texture: Texture{
-        index: 2,
+        index: 3,
         is_visible: true}
     };
     player.update_hurtbox();
@@ -145,7 +143,7 @@ impl World{
     size: Vec2i::new(48,48),
     hurt_box: HurtBox::new(Vec2i::new(24, 24)),
     texture: Texture{
-        index: rng.gen_range(0..2),
+        index: rng.gen_range(0..3),
         is_visible: true}
     };
     temp.update_hurtbox();
@@ -159,94 +157,12 @@ impl World{
     {
         for entity in self.entities.iter_mut()
         {
-            compute_distance(entity, DT, Vec2i::from_tuple(WORLD_SIZE));
+            entity.compute_distance(DT, Vec2i::from_tuple(WORLD_SIZE));
         }
     }
 }
 
-fn change_motion(entity: &mut Entity, stop: bool, move_right: bool, move_down: bool) {
-    let mut xd = 1.0;
-    let mut yd = 1.0;
-    if !move_right{
-        xd = -1.0;
-    }
-    if !move_down{
-        yd = -1.0;
-    }
 
-    match entity.ent_type{
-        EntityType::Player => {
-            if stop{
-                entity.vel.x = 0.0;
-            }
-            else{
-
-            if entity.vel.x <= 0.000001{
-                entity.vel.x = xd;
-            }
-            else{
-                entity.vel.x *= xd;
-            }
-            }
-            
-        },
-        _ => {
-            if stop{
-                entity.acc = Vec2::new(0.0, 0.0);
-            }
-            else{
-                if entity.acc.x <= 0.000001{
-                    entity.acc.x = xd;
-                }
-                else{
-                    entity.acc.x *= xd;
-                }
-                if entity.acc.y <= 0.000001{
-                    entity.acc.y = yd;
-                }
-                else{
-                    entity.acc.y *= yd;
-                }
-                
-            }
-        }
-
-    }
-}
-fn compute_distance(entity: &mut Entity, time_constant: f32, world_sz: Vec2i) -> (){
-    match entity.ent_type{
-        EntityType::Player =>{
-            entity.pos.x += entity.vel.x;
-
-            if (entity.pos.x + entity.size.x as f32) as i32 > world_sz.x {
-            entity.pos.x = (world_sz.x as f32) - entity.size.x as f32 - 1.0;
-        } else if entity.pos.x as usize <= 0 {
-            entity.pos.x = 0.0;
-        }
-
-        },
-        _ => {
-            entity.vel.x += entity.acc.x * time_constant;
-            entity.pos.x += entity.vel.x *time_constant;
-            entity.vel.y += entity.acc.y * time_constant;
-            entity.pos.y += entity.vel.y *time_constant;
-
-            if (entity.pos.x + entity.size.x as f32) as i32 > world_sz.x {
-            entity.pos.x = (world_sz.x as f32) - entity.size.x as f32 - 1.0;
-        } else if entity.pos.x as usize <= 0 {
-            entity.pos.x = 0.0;
-        }
-
-        if (entity.pos.y + entity.size.y as f32) as i32 > world_sz.y {
-            entity.pos.y = (world_sz.y as f32) - entity.size.y as f32 - 1.0;
-        } else if entity.pos.y as usize <= 0 {
-            entity.pos.y = 0.0;
-        }
-
-        },
-        
-    }
-}
 
 struct Game {}
 
@@ -271,7 +187,7 @@ impl engine::Game for Game {
             {
                 if input.is_key_down(VirtualKeyCode::Space){
                     assets.cutscenes[1].trigger();
-                    state.mode = GameMode::Startscene;
+                    state.mode = GameMode::Game;
                 }
             },
             GameMode::Startscene=> {
@@ -283,6 +199,23 @@ impl engine::Game for Game {
                 }
             },
             GameMode::Game =>{
+                if input.is_key_down(VirtualKeyCode::Right){
+                    state.entities[0].change_motion(false, true, false);
+                } else if input.is_key_down(VirtualKeyCode::Left){
+                    state.entities[0].change_motion(false, false, false);
+                }  
+                if input.is_key_up(VirtualKeyCode::Right) && input.is_key_up(VirtualKeyCode::Left) {
+                    state.entities[0].change_motion(true, false, false);
+                }
+
+                if input.is_key_pressed(VirtualKeyCode::A){
+                    dbg!(assets.draw_state.cur_frame);
+                    assets.draw_state.trigger_animation(&state.entities[0], 0);
+                }
+                
+
+                state.update_pos();
+
 
             }
             GameMode::Endscene =>{

@@ -136,6 +136,89 @@ impl Entity{
        self.hurt_box.pos = Vec2::new(self.pos.x + off_x as f32, self.pos.y + off_y as f32);
         
     }
+    pub fn change_motion( &mut self, stop: bool, move_right: bool, move_down: bool) {
+    let mut xd = 1.0;
+    let mut yd = 1.0;
+    if !move_right{
+        xd = -1.0;
+    }
+    if !move_down{
+        yd = -1.0;
+    }
+
+    match self.ent_type{
+        EntityType::Player => {
+            if stop{
+                self.vel.x = 0.0;
+            }
+            else{
+
+            if self.vel.x <= 0.000001{
+                self.vel.x = xd;
+            }
+            else{
+                self.vel.x *= xd;
+            }
+            }
+            
+        },
+        _ => {
+            if stop{
+                self.acc = Vec2::new(0.0, 0.0);
+            }
+            else{
+                if self.acc.x <= 0.000001{
+                    self.acc.x = xd;
+                }
+                else{
+                    self.acc.x *= xd;
+                }
+                if self.acc.y <= 0.000001{
+                    self.acc.y = yd;
+                }
+                else{
+                    self.acc.y *= yd;
+                }
+                
+            }
+        }
+
+    }
+}
+pub fn compute_distance(&mut self, time_constant: f32, world_sz: Vec2i) -> (){
+    match self.ent_type{
+        EntityType::Player =>{
+            self.pos.x += self.vel.x;
+
+            if (self.pos.x + self.size.x as f32) as i32 > world_sz.x {
+            self.pos.x = (world_sz.x as f32) - self.size.x as f32 - 1.0;
+        } else if self.pos.x as usize <= 0 {
+            self.pos.x = 0.0;
+        }
+
+        },
+        _ => {
+            self.vel.x += self.acc.x * time_constant;
+            self.pos.x += self.vel.x *time_constant;
+            self.vel.y += self.acc.y * time_constant;
+            self.pos.y += self.vel.y *time_constant;
+
+            if (self.pos.x + self.size.x as f32) as i32 > world_sz.x {
+            self.pos.x = (world_sz.x as f32) - self.size.x as f32 - 1.0;
+        } else if self.pos.x as usize <= 0 {
+            self.pos.x = 0.0;
+        }
+
+        if (self.pos.y + self.size.y as f32) as i32 > world_sz.y {
+            self.pos.y = (world_sz.y as f32) - self.size.y as f32 - 1.0;
+        } else if self.pos.y as usize <= 0 {
+            self.pos.y = 0.0;
+        }
+
+        },
+        
+    }
+}
 }
 
 

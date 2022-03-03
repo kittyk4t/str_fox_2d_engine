@@ -134,7 +134,7 @@ impl Image {
                     .saturating_add((to.g as f32 * (1.0 - fa)).round() as u8);
                 to.b = from
                     .b
-                    .saturating_add((to.g as f32 * (1.0 - fa)).round() as u8);
+                    .saturating_add((to.b as f32 * (1.0 - fa)).round() as u8);
                 to.a = ((fa + ta * (1.0 - fa)) * 255.0).round() as u8;
             }
         }
