@@ -23,8 +23,15 @@ pub enum GameMode{
 
 fn scenes() -> Vec<Cutscene>{
     let mut scenes = Vec::new();
-    let timing1: vec![15, 15];
-    let timing2: Vec<usize>;
+    let timing1 =  vec![15, 15];
+    let timing2 = vec![1,2,3,4,5,6,7,
+    5,10,10,10,30,10,10,
+    5,10,10,10,30,5,10,
+    5,10,10,10,10,30,10,
+    10,10,30,10,10,10,30,
+    10,10,10,30,10,10,10,
+    30,10,5,10];
+
     let timing3 = vec![10,5,5,5,5,30,
     15,10,10,10,10,10,
     10,15,10,10,10,10,
@@ -34,7 +41,11 @@ fn scenes() -> Vec<Cutscene>{
     let mut data: SceneData;
 
     data = SceneData::new(2, Vec2i::from_tuple(WORLD_SIZE), timing1, true);
-    scenes.push(Cutscene::new_data(std::path::Path::new("src/start_scene.png"), data));
+    scenes.push(Cutscene::new_data(std::path::Path::new("src/title_scene.png"), data));
+    scenes[0].trigger();
+
+    data = SceneData::new(46, Vec2i::from_tuple(WORLD_SIZE), timing2, false);
+    scenes.push(Cutscene::new_data(std::path::Path::new("src/cutscene-pt1.png"), data));
 
     data = SceneData::new(35, Vec2i::from_tuple(WORLD_SIZE), timing3, false);
     scenes.push(Cutscene::new_data(std::path::Path::new("src/cutscene-pt2.png"), data));
@@ -254,6 +265,33 @@ impl engine::Game for Game {
 
     fn update(state: &mut World, assets: &mut Graphics, input: &engine::Input) {
         use winit::event::VirtualKeyCode;
+
+        match state.mode {
+            GameMode::Title => 
+            {
+                if input.is_key_down(VirtualKeyCode::Space){
+                    assets.cutscenes[1].trigger();
+                    state.mode = GameMode::Startscene;
+                }
+            },
+            GameMode::Startscene=> {
+                if !assets.cutscenes[1].is_active(){
+                    let index = assets.cutscenes[1].last_plate();
+                    assets.cutscenes[1].set_plate(index);
+
+                    state.mode = GameMode::Game;
+                }
+            },
+            GameMode::Game =>{
+
+            }
+            GameMode::Endscene =>{
+                if !assets.cutscenes[2].is_active(){
+                    let index = assets.cutscenes[2].last_plate();
+                    assets.cutscenes[2].set_plate(index);
+                }
+            }
+        }
         
         //process and react to inputs
         //probably look at collisions
@@ -262,6 +300,20 @@ impl engine::Game for Game {
 
     fn render(state: &mut World, assets: &mut Graphics, fb2d: &mut Image) {
         //could add if in mode, and have render cutscene/drawstate?
+        match state.mode{
+            GameMode::Title =>{ 
+                assets.cutscenes[0].load_buffer(fb2d);
+            },
+            GameMode::Startscene =>{
+                assets.cutscenes[1].load_buffer(fb2d);
+            },
+            GameMode::Game => {
+                assets.draw_state.load_buffer(&state.entities, fb2d);
+            },
+            GameMode::Endscene => {
+                assets.cutscenes[2].load_buffer(fb2d);
+            },
+        }
         
     }
 }

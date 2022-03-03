@@ -170,6 +170,16 @@ impl Cutscene{
         }
     }
 
+    pub fn is_active(&self) -> bool{
+        self.is_active
+    }
+
+    pub fn set_plate(&mut self, plate_index: usize) -> (){
+        assert!(self.plates.len()>plate_index);
+
+        self.cur_plate = plate_index;
+    }
+
     pub fn incr_frame(&mut self) -> (){
        // dbg!(self.cur_frame, self.is_active, self.frame_triggered, self.timing[self.cur_plate]);
         self.cur_frame += 1;
@@ -179,11 +189,15 @@ impl Cutscene{
         
     }
 
-    pub fn load_buffer(&mut self, vulkan_config:  &mut VulkanConfig) -> ()
+    pub fn last_plate(&self) -> usize{
+        self.plates.len()-1
+    }
+
+    pub fn load_buffer(&mut self, fb2d:  &mut Image) -> ()
     {
         self.incr_frame();
         let rect = Rect{pos:Vec2i::new(0,0), sz: self.plates[self.cur_plate].sz};
-        vulkan_config.fb2d.bitblt(&self.plates[self.cur_plate], rect, Vec2i::new(0,0));
+        fb2d.bitblt(&self.plates[self.cur_plate], rect, Vec2i::new(0,0));
     }
 
 }
