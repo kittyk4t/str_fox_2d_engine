@@ -41,6 +41,10 @@ impl Vec2i{
     pub fn new(x: i32, y:i32) -> Vec2i{
         Vec2i{x,y}
     }
+
+    pub fn from_tuple(tup: (i32, i32)) -> Vec2i{
+        Vec2i::new(tup.0, tup.1)
+    }
 }
 impl std::ops::Add<Vec2i> for Vec2i {
     type Output = Self;

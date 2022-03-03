@@ -24,6 +24,27 @@ impl SheetData{
             }
         }
 }
+
+#[derive(Clone)]
+pub struct SceneData{
+    pub plate_num: usize,
+    pub plate_size: Vec2i,
+    pub timing: Vec<usize>,
+    pub cycle: bool
+}
+impl SceneData{
+    pub fn new(plate_num: usize, plate_size: Vec2i, 
+        timing: Vec<usize>, cycle: bool) -> SceneData{
+            SceneData{
+                plate_num,
+                plate_size,
+                timing,
+                cycle
+            }
+        }
+
+}
+
 /*
 This is a struct that is used as a reference point for instances of Animation entites,
 it holds the difference images that go together to form 1 animated action, as well as the 
@@ -82,6 +103,17 @@ impl Cutscene{
                 cur_plate: 0,
                 timing,
                 cycle
+            }
+        }
+    pub fn new_data(plates: &std::path::Path, data: SceneData) -> Cutscene{
+            Cutscene{
+                plates: Cutscene::load_plates(plates, data.plate_num, data.plate_size), 
+                is_active: false,
+                frame_triggered: 0,
+                cur_frame: 0,
+                cur_plate: 0,
+                timing: data.timing,
+                cycle: data.cycle,
             }
         }
 
@@ -329,15 +361,14 @@ pub struct AnimationEntity{
     states: AnimQueue,
     pos: Vec2,
     size: Vec2i,
-    animation_layer: usize,
 }
 
 impl AnimationEntity{
 
-    pub fn new(sprite: Sprite, states: AnimQueue, pos: Vec2, size: Vec2i, animation_layer: usize,) -> 
+    pub fn new(sprite: Sprite, states: AnimQueue, pos: Vec2, size: Vec2i) -> 
     AnimationEntity{
         
-        AnimationEntity{sprite, states, pos, size, animation_layer} }
+        AnimationEntity{sprite, states, pos, size} }
 
     pub fn to_Rect(&self) -> Rect {
         let image = self.pose();
@@ -416,7 +447,6 @@ impl DrawState{
                 AnimQueue::new(),
                 entity.pos,
                 entity.size,
-                entity.texture.animation_layer
             ));
         }
         
@@ -432,7 +462,6 @@ impl DrawState{
                 AnimQueue::new(),
                 entity.pos,
                 entity.size,
-                entity.texture.animation_layer
             ));
                 }, 
                 Some(anim_entity) => {anim_entity.pos = entity.pos}
@@ -456,7 +485,6 @@ impl DrawState{
                 AnimQueue::new(),
                 entity.pos,
                 entity.size,
-                entity.texture.animation_layer
             );
             new.trigger_animation(anim_id, entity.texture.is_visible, self.cur_frame);
             self.anim_entities.insert(entity.id, new);

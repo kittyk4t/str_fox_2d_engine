@@ -33,7 +33,6 @@ pub const HEIGHT: usize = 240;
 pub trait Game {
     type GameState;
     type Assets;
-    type DrawState;
     fn new() -> (Self::GameState, Self::Assets);
     fn update(state: &mut Self::GameState, assets: &mut Self::Assets, keys: &Input);
     fn render(state: &mut Self::GameState, assets: &mut Self::Assets, fb: &mut Image);
@@ -132,10 +131,8 @@ pub fn go<GameT: Game + 'static>() {
                     &mut assets,
                     &mut vulkan_state.framebuffer_data.fb2d,
                 );
-                
                                 
                 acc -= SIM_DT;
-                
             }
                 
                 render3d(&mut vulkan_config, &mut vulkan_state);
