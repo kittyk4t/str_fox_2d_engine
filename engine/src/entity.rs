@@ -136,13 +136,14 @@ impl Entity{
        self.hurt_box.pos = Vec2::new(self.pos.x + off_x as f32, self.pos.y + off_y as f32);
         
     }
-    pub fn change_motion( &mut self, stop: bool, move_right: bool, move_down: bool) {
+
+    pub fn change_motion( &mut self, stop: bool, move_x: Vec2b, move_y: Vec2b) {
     let mut xd = 1.0;
     let mut yd = 1.0;
-    if !move_right{
+    if !move_x.move_positive{
         xd = -1.0;
     }
-    if !move_down{
+    if !move_y.move_positive{
         yd = -1.0;
     }
 
@@ -153,12 +154,16 @@ impl Entity{
             }
             else{
 
-            if self.vel.x <= 0.000001{
+            if move_x.move_axis{
+                if self.vel.x <= 0.000001{
                 self.vel.x = xd;
             }
             else{
                 self.vel.x *= xd;
             }
+
+            }
+            
             }
             
         },
@@ -167,18 +172,26 @@ impl Entity{
                 self.acc = Vec2::new(0.0, 0.0);
             }
             else{
-                if self.acc.x <= 0.000001{
-                    self.acc.x = xd;
+                if move_x.move_axis{
+                    if self.acc.x <= 0.000001{
+                    self.acc.x = 2.0 * xd;
                 }
                 else{
                     self.acc.x *= xd;
                 }
-                if self.acc.y <= 0.000001{
-                    self.acc.y = yd;
+
+                }
+                
+                if move_y.move_axis{
+                    if self.acc.y <= 0.000001{
+                    self.acc.y = 2.0 * yd;
                 }
                 else{
                     self.acc.y *= yd;
                 }
+
+                }
+                
                 
             }
         }

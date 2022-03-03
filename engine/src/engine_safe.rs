@@ -131,12 +131,13 @@ pub fn go<GameT: Game + 'static>() {
                     &mut assets,
                     &mut vulkan_state.framebuffer_data.fb2d,
                 );
+                input.next_frame();
                                 
                 acc -= SIM_DT;
             }
                 
                 render3d(&mut vulkan_config, &mut vulkan_state);
-                input.next_frame();
+               
             }
             _ => (),
         }

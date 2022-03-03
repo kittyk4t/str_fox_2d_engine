@@ -160,6 +160,32 @@ impl World{
             entity.compute_distance(DT, Vec2i::from_tuple(WORLD_SIZE));
         }
     }
+
+    fn move_enemies(&mut self) -> (){
+        let mut first = true;
+                let mut stop = false;
+                let mut total_enemies = 0;
+                let mut last = 0;
+                for (i, entity) in self.entities.iter_mut().enumerate(){
+                    match entity.ent_type{
+                        EntityType::Enemy =>{
+                            total_enemies+=1;
+                            last = i;
+                            if first{
+                                first = false;
+                                stop = entity.pos.y as i32 <= 92;
+                            }
+                            entity.change_motion(stop, Vec2b::new(false, false), Vec2b::new(true, false));
+                        },
+                        _ => {}
+                    }
+                }
+                if last != 0 && self.entities[last].pos.y as i32 <= (WORLD_SIZE.1 - 96){
+                    let mut rng = thread_rng();
+                    self.gen_enemies(rng.gen_range(1..5));
+                }
+
+    }
 }
 
 
@@ -199,24 +225,23 @@ impl engine::Game for Game {
                 }
             },
             GameMode::Game =>{
+                //moving player
                 if input.is_key_down(VirtualKeyCode::Right){
-                    state.entities[0].change_motion(false, true, false);
+                    state.entities[0].change_motion(false, Vec2b::new(true, true), Vec2b::new(false, false));
                 } else if input.is_key_down(VirtualKeyCode::Left){
-                    state.entities[0].change_motion(false, false, false);
-                }  
-                if input.is_key_up(VirtualKeyCode::Right) && input.is_key_up(VirtualKeyCode::Left) {
-                    state.entities[0].change_motion(true, false, false);
+                    state.entities[0].change_motion(false, Vec2b::new(true, false), Vec2b::new(false, false));
+                }  else{
+                     state.entities[0].change_motion(true, Vec2b::new(true, false), Vec2b::new(false, false));
                 }
-
+                state.move_enemies();
+                
+                //shooting at enemies
                 if input.is_key_pressed(VirtualKeyCode::A){
-                    dbg!(assets.draw_state.cur_frame);
                     assets.draw_state.trigger_animation(&state.entities[0], 0);
                 }
                 
 
                 state.update_pos();
-
-
             }
             GameMode::Endscene =>{
                 if !assets.cutscenes[2].is_active(){

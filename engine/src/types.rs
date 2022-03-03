@@ -57,6 +57,19 @@ impl std::ops::Add<Vec2i> for Vec2i {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct Vec2b{
+    pub move_axis: bool,
+    pub move_positive: bool,
+}
+impl Vec2b{
+    pub fn new(move_axis: bool, move_positive: bool) -> Vec2b{
+        Vec2b{
+            move_axis, move_positive
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Rect {
     pub pos: Vec2i,
