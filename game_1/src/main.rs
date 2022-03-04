@@ -63,6 +63,39 @@ fn sheet_info() -> SheetData{
     SheetData::new(anim_num, length, timing, cycles, retriggers, prior)
 }
 
+struct EntityGrid{
+    grid: Vec<Vec<usize>>,
+    row_sz: usize,
+    mid: usize,
+}
+impl EntityGrid{
+    fn new(row_sz: usize) -> EntityGrid{
+        EntityGrid{
+            grid: Vec::new(),
+            row_sz,
+            mid: row_sz/2
+        }
+    }
+    fn add_row(&mut self, index_offset: usize, entities: &Vec<Entity>) -> (){
+        assert!(self.row_sz <= entities.len());
+        let diff = self.row_sz - entities.len();
+        let mut new = Vec::new();
+        let mut added = 0;
+
+        for i in 0..self.row_sz{
+            if i >= diff && added < entities.len(){
+                let index = (i - diff) + index_offset;
+                new.push(index);
+                added+=1;
+            }
+            else{
+                new.push(0);
+            }
+        }
+        self.grid.push(new);
+    }
+}
+
 struct Graphics {
     draw_state: DrawState,
     cutscenes: Vec<Cutscene>
@@ -91,6 +124,7 @@ impl Graphics{
 struct World{
     mode: GameMode,
     entities: Vec<Entity>,
+    enem_grid: EntityGrid,
     score: u8,
     level: usize,
 }
@@ -99,6 +133,7 @@ impl World{
         let mut world = World{
             mode: GameMode::Title,
             entities: Vec::new(),
+            enem_grid: EntityGrid::new(4),
             score: 0,
             level: 0
         };
@@ -147,6 +182,7 @@ impl World{
         is_visible: true}
     };
     temp.update_hurtbox();
+    //self.enem_grid.add_row(self.entities.len(), &temp);
     self.entities.push(temp);
 
 
