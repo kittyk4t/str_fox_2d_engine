@@ -12,6 +12,7 @@ use rand::{thread_rng, Rng};
 const WORLD_SIZE: (i32, i32) = (240, 240);
 const DT: f32 = 1.0/30.0;
 
+#[derive(Clone, Copy)]
 pub enum GameMode{
     Title,
     Startscene,
@@ -63,12 +64,20 @@ fn sheet_info() -> SheetData{
     SheetData::new(anim_num, length, timing, cycles, retriggers, prior)
 }
 
-
+#[derive(Clone, Copy)]
+pub enum RowOff{
+    Center,
+    Left,
+    Right,
+}
 struct EntityGrid{
     grid: Vec<Vec<usize>>,
     row_sz: usize,
     mid: usize,
     even_right: bool,
+    even_left: bool,
+    even_rows: RowOff,
+    odd_rows: RowOff,
 }
 impl EntityGrid{
     fn new(row_sz: usize) -> EntityGrid{
@@ -77,6 +86,9 @@ impl EntityGrid{
             row_sz,
             mid: row_sz/2,
             even_right: true,
+            even_left: false,
+            even_rows: RowOff::Center,
+            odd_rows: RowOff::Center,
             
         }
     }
@@ -129,6 +141,42 @@ impl EntityGrid{
             }
         }
         count
+    }
+
+    fn offset (&mut self) -> (){
+        match (self.even_rows, self.odd_rows)
+                        {
+                            (RowOff::Center, RowOff::Center) =>{
+                                if self.even_right{
+                                    self.even_rows = RowOff::Right;
+                                    self.odd_rows = RowOff::Left;
+                                }
+                                else {
+                                    self.even_rows = RowOff::Left;
+                                    self.odd_rows = RowOff::Right;
+                                }
+                                
+
+                            },
+                            (RowOff::Right, RowOff::Left) =>{
+                                if self.even_right { 
+                                    self.even_rows = RowOff::Center;
+                                    self.odd_rows = RowOff::Center;
+                                    self.even_right = !self.even_right;
+                                }
+                                
+                            },
+                            (RowOff::Left, RowOff::Right) =>{
+                                if !self.even_right{
+                                    self.even_rows = RowOff::Center;
+                                    self.odd_rows = RowOff::Center;
+                                    self.even_right = !self.even_right;
+                                }
+                            },
+                            _ => {}
+
+                        }
+
     }
    
 }
@@ -238,16 +286,20 @@ impl World{
     fn move_enemies(&mut self, cur_frame: usize) -> (){
 
         if self.enem_grid.count() > 0{
-            if self.entities[self.enem_grid.last()].pos.y < (WORLD_SIZE.1 - 48) as f32
+            match (self.enem_grid.even_rows, self.enem_grid.odd_rows){
+                (RowOff::Center, RowOff::Center) =>{
+                     if self.entities[self.enem_grid.last()].pos.y < (WORLD_SIZE.1 - 48) as f32
             {
                 let mut rng = thread_rng();
                 self.gen_enemies(rng.gen_range(1..self.enem_grid.row_sz));
                 
             }
+                },
+                _ =>{}
+            }
+           
            
         }
-
-
         if cur_frame % 45 == 0 {
             if self.entities[self.enem_grid.first()].pos.y > 92.0{
             for row in self.enem_grid.grid.iter(){
@@ -260,9 +312,11 @@ impl World{
         }
         }
         if cur_frame % 60 == 0 {
+            self.enem_grid.offset();
               for (i, row) in self.enem_grid.grid.iter().enumerate(){
                 for index in row.iter(){
                     if *index > 0 && *index < self.entities.len(){
+                        
                         if self.enem_grid.even_right {
                             if i %2 == 0{
                                 self.entities[*index].pos.x += 24.0;
@@ -285,7 +339,7 @@ impl World{
                         
                     }
                 }
-                self.enem_grid.even_right = ! self.enem_grid.even_right;
+                
             }
 
         }
@@ -339,6 +393,7 @@ impl engine::Game for Game {
                 }  else{
                      state.entities[0].change_motion(true, Vec2b::new(true, false), Vec2b::new(false, false));
                 }
+                    
                     state.move_enemies(assets.draw_state.cur_frame);
                 
                 

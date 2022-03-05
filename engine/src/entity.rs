@@ -72,6 +72,7 @@ abstract on collision method
 */
 
 use super::types::*;
+use super::collision::*;
 use std::hash::{Hash};
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
@@ -105,14 +106,20 @@ pub trait Colliable {
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct HurtBox {
-    pos: Vec2,
-    size: Vec2i,
+    pub pos: Vec2,
+    pub size: Vec2i,
 }
 impl HurtBox{
     pub fn new(size: Vec2i) -> HurtBox{
         HurtBox{pos: Vec2::new(0.0, 0.0),
         size: size,
     }}
+    pub fn touching(&self, other: HurtBox)  -> bool{
+        let this_rect = Rect::new(self.pos.to_Vec2i(), self.size);
+        let other_rect = Rect::new(other.pos.to_Vec2i(), other.size);
+        
+       collision::rect_touching(this_rect, other_rect)
+    }
 }
 
 
@@ -231,6 +238,10 @@ pub fn compute_distance(&mut self, time_constant: f32, world_sz: Vec2i) -> (){
         },
         
     }
+}
+
+pub fn collided(&self, other: Entity) -> bool{
+    self.hurt_box.touching(other.hurt_box)
 }
 }
 

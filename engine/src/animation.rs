@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use super::types::*; 
 use super::image::*;
 use super::entity::*;
-use super::engine_core::*;
+use super::engine_safe::*;
 
 #[derive(Clone)]
 pub struct SheetData{
