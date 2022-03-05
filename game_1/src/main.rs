@@ -67,23 +67,24 @@ struct EntityGrid{
     grid: Vec<Vec<usize>>,
     row_sz: usize,
     mid: usize,
+    even_right: bool,
 }
 impl EntityGrid{
     fn new(row_sz: usize) -> EntityGrid{
         EntityGrid{
             grid: Vec::new(),
             row_sz,
-            mid: row_sz/2
+            mid: row_sz/2,
+            even_right: true
         }
     }
-    fn add_row(&mut self, index_offset: usize, entities: &Vec<Entity>) -> (){
-        assert!(self.row_sz <= entities.len());
-        let diff = self.row_sz - entities.len();
+    fn add_row(&mut self, index_offset: usize, num_entities: usize) -> (){
+        let diff = self.row_sz - num_entities;
         let mut new = Vec::new();
         let mut added = 0;
 
         for i in 0..self.row_sz{
-            if i >= diff && added < entities.len(){
+            if i >= diff && added < num_entities{
                 let index = (i - diff) + index_offset;
                 new.push(index);
                 added+=1;
@@ -94,6 +95,40 @@ impl EntityGrid{
         }
         self.grid.push(new);
     }
+    fn first(&self) -> usize{
+        for row in self.grid.iter(){
+        for val in row.iter(){
+            if *val > 0{
+                     return *val;
+                }
+            }
+       }
+        0
+        
+    }
+    fn last (&self) -> usize {
+        let mut last = 0;
+        for row in self.grid.iter(){
+        for val in row.iter(){
+            if *val > 0{
+                last = *val;
+            }
+       }    
+    }
+        last}
+
+    fn count(&self) -> usize{
+        let mut count = 0;
+        for row in self.grid.iter(){
+            for val in row.iter(){
+                if *val > 0{
+                    count +=1;
+                }
+            }
+        }
+        count
+    }
+   
 }
 
 struct Graphics {
@@ -168,6 +203,7 @@ impl World{
 
         x_pos = (WORLD_SIZE.0 as usize - (num * 48)) as f32 / 2.0;
         
+        self.enem_grid.add_row(self.entities.len(), num);
         for i in 0..num{
             temp = Entity{
                 id: self.entities.len(),
@@ -197,32 +233,60 @@ impl World{
         }
     }
 
-    fn move_enemies(&mut self) -> (){
-        let mut first = true;
-                let mut stop = false;
-                let mut total_enemies = 0;
-                let mut last = 0;
-                for (i, entity) in self.entities.iter_mut().enumerate(){
-                    match entity.ent_type{
-                        EntityType::Enemy =>{
-                            total_enemies+=1;
-                            last = i;
-                            if first{
-                                first = false;
-                                stop = entity.pos.y as i32 <= 92;
-                            }
-                            entity.change_motion(stop, Vec2b::new(false, false), Vec2b::new(true, false));
-                        },
-                        _ => {}
+    fn move_enemies(&mut self, cur_frame: usize) -> (){
+        //dbg!(self.enem_grid.first(), self.enem_grid.last());
+        if self.enem_grid.count() > 0{
+            if self.entities[self.enem_grid.last()].pos.y < (WORLD_SIZE.1 - 48)as f32
+            {
+                let mut rng = thread_rng();
+                self.gen_enemies(rng.gen_range(1..self.enem_grid.row_sz));
+            }
+        }
+        if self.entities[self.enem_grid.first()].pos.y > 92.0{
+            for row in self.enem_grid.grid.iter(){
+                for index in row.iter(){
+                    if *index > 0 && *index < self.entities.len(){
+                        self.entities[*index].pos.y -= 24.0;
                     }
                 }
-                if last != 0 && self.entities[last].pos.y as i32 <= (WORLD_SIZE.1 - 96){
-                    let mut rng = thread_rng();
-                    self.gen_enemies(rng.gen_range(1..5));
+            }
+        }
+
+        if cur_frame % 60 == 0{
+              for (i, row) in self.enem_grid.grid.iter().enumerate(){
+                for index in row.iter(){
+                    if *index > 0 && *index < self.entities.len(){
+                        if self.enem_grid.even_right {
+                            if i %2 == 0{
+                                self.entities[*index].pos.x += 24.0;
+                            }
+                            else{
+                                self.entities[*index].pos.x -= 24.0;
+                            }
+                        }
+                        else {
+                            if i %2 == 0{
+                                self.entities[*index].pos.x -= 24.0;
+                            }
+                            else{
+                                self.entities[*index].pos.x += 24.0;
+                            }
+                            
+                        }
+                        
+                        }
+                        
+                    }
                 }
+                self.enem_grid.even_right = ! self.enem_grid.even_right;
+            }
+
+        }
+      
 
     }
-}
+        
+
 
 
 
@@ -269,7 +333,9 @@ impl engine::Game for Game {
                 }  else{
                      state.entities[0].change_motion(true, Vec2b::new(true, false), Vec2b::new(false, false));
                 }
-                state.move_enemies();
+                    state.move_enemies(assets.draw_state.cur_frame);
+                
+                
                 
                 //shooting at enemies
                 if input.is_key_pressed(VirtualKeyCode::A){
