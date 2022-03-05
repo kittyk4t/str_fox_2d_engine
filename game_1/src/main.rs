@@ -21,7 +21,7 @@ pub enum GameMode{
 
 fn scenes() -> Vec<Cutscene>{
     let mut scenes = Vec::new();
-    let timing1 =  vec![15, 15];
+    let timing1 =  vec![10, 10];
     let timing2 = vec![1,2,3,4,5,6,7,
     5,10,10,10,30,10,10,
     5,10,10,10,30,5,10,
@@ -63,6 +63,7 @@ fn sheet_info() -> SheetData{
     SheetData::new(anim_num, length, timing, cycles, retriggers, prior)
 }
 
+
 struct EntityGrid{
     grid: Vec<Vec<usize>>,
     row_sz: usize,
@@ -75,7 +76,8 @@ impl EntityGrid{
             grid: Vec::new(),
             row_sz,
             mid: row_sz/2,
-            even_right: true
+            even_right: true,
+            
         }
     }
     fn add_row(&mut self, index_offset: usize, num_entities: usize) -> (){
@@ -234,15 +236,20 @@ impl World{
     }
 
     fn move_enemies(&mut self, cur_frame: usize) -> (){
-        //dbg!(self.enem_grid.first(), self.enem_grid.last());
+
         if self.enem_grid.count() > 0{
-            if self.entities[self.enem_grid.last()].pos.y < (WORLD_SIZE.1 - 48)as f32
+            if self.entities[self.enem_grid.last()].pos.y < (WORLD_SIZE.1 - 48) as f32
             {
                 let mut rng = thread_rng();
                 self.gen_enemies(rng.gen_range(1..self.enem_grid.row_sz));
+                
             }
+           
         }
-        if self.entities[self.enem_grid.first()].pos.y > 92.0{
+
+
+        if cur_frame % 45 == 0 {
+            if self.entities[self.enem_grid.first()].pos.y > 92.0{
             for row in self.enem_grid.grid.iter(){
                 for index in row.iter(){
                     if *index > 0 && *index < self.entities.len(){
@@ -251,8 +258,8 @@ impl World{
                 }
             }
         }
-
-        if cur_frame % 60 == 0{
+        }
+        if cur_frame % 60 == 0 {
               for (i, row) in self.enem_grid.grid.iter().enumerate(){
                 for index in row.iter(){
                     if *index > 0 && *index < self.entities.len(){
@@ -306,7 +313,6 @@ impl engine::Game for Game {
     }
 
     fn update(state: &mut World, assets: &mut Graphics, input: &engine::Input) {
-        use winit::event::VirtualKeyCode;
 
         match state.mode {
             GameMode::Title => 
