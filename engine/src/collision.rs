@@ -70,6 +70,13 @@ pub fn check_collisions(entities: Vec<entity::Entity>){
 }*/
 
 use super::types::*;
+use super::entity::*;
+
+pub struct Contact{
+    pub contact_type: (EntityType, EntityType),
+    pub collider1: usize,
+    pub collider2: usize,
+}
 
 pub fn rect_touching(r1:Rect, r2:Rect) -> bool {
     // r1 left is left of r2 right
@@ -94,68 +101,23 @@ fn rect_displacement(r1:Rect, r2:Rect) -> Option<(i32,i32)> {
         None
     }
 }
-/*
-let mut contacts = vec![];
+
+pub fn contacts(colliders: Vec<Entity>) -> Vec<Contact>{
+    let mut contacts = vec![];
 for (i, body_i) in colliders.iter().enumerate() {
     for (j, body_j) in colliders.iter().enumerate().skip(i+1) {
-        let displacement = match (body_i.shape, body_j.shape) {
-            (Shape::Rect(ri), Shape::Rect(rj)) => ri.overlap(rj),
-            (Shape::Circle(_), Shape::Point) => point_circle_disp(body_j, body_i),
-            (Shape::Point, Shape::Circle(_)) => point_circle_disp(body_i, body_j),
-            //... a dozen more cases...
-            (Shape::Poly(_), Shape::Poly(_)) => sat(body_i, body_j)
-        };
-        if let Some(disp) = displacement {
-            contacts.push(Contact(i, j, disp));
+        if body_i.collided(body_j){
+            contacts.push(Contact{
+                contact_type: (body_i.ent_type, body_j.ent_type),
+                collider1: i,
+                collider2: j,
+            })
+
         }
     }
 }
+contacts
 
-let mut disps = Vec2i{x:0,y:0};
-const COLLISION_STEPS: usize = 3;
-for _step in 0..COLLISION_STEPS {
-    // ... gather contacts as above...
-    // Now restitute contacts:
-    let mut resolved = false;
-    for (ri,mut ov) in touching_rects.iter() {
-        // Touching but not overlapping
-        if ov.x == 0 || ov.y == 0 {
-            resolved = true;
-            // Maybe track "I'm touching it on this side or that side"
-            break;
-        }
-        // figure out which components of o should be negated---is player left or above the wall?
-        // This is needlessly specialized
-        // In a real game this would be "is thing 1 left or above thing 2"?
-        if state.player_pos.x + PLAYER_SZ.x/2 < state.walls[*ri].midpoint().x {
-            ov.x = -ov.x;
-        }
-        if state.player_pos.y + PLAYER_SZ.y/2 < state.walls[*ri].midpoint().y {
-            ov.y = -ov.y;
-        }
-        // Is this more of a horizontal collision... (and we are allowed to displace horizontally)
-        if ov.x.abs() <= ov.y.abs() && ov.x.signum() != -disps.x.signum() {
-            // Record that we moved by o.x, to avoid contradictory moves later
-            disps.x += o.x;
-            // Actually move player pos
-            state.player_pos.x += o.x;
-            // Mark collision for the player as resolved.
-            resolved = true;
-            break;
-            // or is it more of a vertical collision (and we are allowed to displace vertically)
-        } else if ov.y.abs() <= ov.x.abs() && ov.y.signum() != -disps.y.signum() {
-            disps.y += o.y;
-            state.player_pos.y += o.y;
-            resolved = true;
-            break;
-        } else {
-            // otherwise, we can't actually handle this displacement because we had a contradictory
-            // displacement earlier in the frame.
-        }
-    }
-    // Couldn't resolve collision, player must be squashed or trapped (e.g. by a moving platform)
-    if !resolved {
-        // In your game, this might mean killing the player character or moving them somewhere else
-        squished = true;
-    }
-}*/
+}
+
+

@@ -337,6 +337,7 @@ impl SpriteSheet{
         let mut temp_poses = Vec::<Image>::new();
         let mut pos = Vec2i{x:0, y:0};
 
+        let mut time_i = 0;
         //number of distinct sprites in sprite_sheet
         for (i, val) in data.animation_number.iter().enumerate() {
             //go by number of animations for that sprite
@@ -351,11 +352,11 @@ impl SpriteSheet{
                 
                 pos.x = 0;
                 pos.y += pose_size.y;
-                assert_eq!(temp_poses.len(), data.timings[i+j].len());
+                assert_eq!(temp_poses.len(), data.timings[time_i].len());
                 let temp_anim = Animation::new_all(*val, temp_poses.clone(),
-                 data.priorities[i][j], data.timings[i +j].clone(), data.cycles[i][j], 
+                 data.priorities[i][j], data.timings[time_i].clone(), data.cycles[i][j], 
                  data.retriggers[i][j]);
-                
+                time_i += 1;
                 temp.push(temp_anim);
                 temp_poses.clear();
             }
@@ -434,7 +435,7 @@ pub struct DrawState{
 impl DrawState{
     
     pub fn new(sheet: &std::path::Path, sheet_data: SheetData, 
-        pose_sz: Vec2i, background: &std::path::Path, entities: &Vec<Entity>, size: Vec2i)-> DrawState {
+        pose_sz: Vec2i, background: &std::path::Path, entities: Vec<Entity>, size: Vec2i)-> DrawState {
         let mut state = DrawState{
         tb_render: Image::new(size),
         background: Image::from_file(background),
@@ -455,7 +456,7 @@ impl DrawState{
         sheet
     }
 
-    fn init_anim_enitities(&mut self, entities: &Vec<Entity>) -> (){
+    fn init_anim_enitities(&mut self, entities: Vec<Entity>) -> (){
         for entity in entities.iter()
         {
             self.anim_entities.insert(entity.id, AnimationEntity::new(

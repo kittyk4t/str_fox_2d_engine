@@ -118,7 +118,7 @@ impl HurtBox{
         let this_rect = Rect::new(self.pos.to_Vec2i(), self.size);
         let other_rect = Rect::new(other.pos.to_Vec2i(), other.size);
         
-       collision::rect_touching(this_rect, other_rect)
+       super::collision::rect_touching(this_rect, other_rect)
     }
 }
 
@@ -240,9 +240,10 @@ pub fn compute_distance(&mut self, time_constant: f32, world_sz: Vec2i) -> (){
     }
 }
 
-pub fn collided(&self, other: Entity) -> bool{
+pub fn collided(&self, other: &Entity) -> bool{
     self.hurt_box.touching(other.hurt_box)
 }
+
 }
 
 

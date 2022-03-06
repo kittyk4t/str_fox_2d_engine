@@ -3,7 +3,9 @@ use engine::animation::*;
 use engine::entity::*;
 use engine::types::*;
 use engine::engine_safe::*;
+use engine::collision::*;
 use std::path::Path;
+use std::collections::HashMap;
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use rand::{thread_rng, Rng};
@@ -53,16 +55,17 @@ fn scenes() -> Vec<Cutscene>{
     
 }
 fn sheet_info() -> SheetData{
-    let anim_num = vec![1, 1, 1, 3];
-    let length = vec![vec![6], vec![6], vec![6],vec![2, 5, 5]];
+    let anim_num = vec![1, 1, 1, 3, 1];
+    let length = vec![vec![6], vec![6], vec![6],vec![2, 5, 5], vec![2]];
     let timing = vec![vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], 
-    vec![2, 2], vec![1,2,3,4,5], vec![1,2,3,4,5]];
-    let cycles = vec![vec![false], vec![false], vec![false], vec![false, false, false]];
-    let retriggers = vec![vec![false], vec![false], vec![false], vec![true, true, true]];
-    let prior = vec![vec![1], vec![6], vec![6],vec![0, 5, 5]];
+    vec![2, 2], vec![1,2,3,4,5], vec![1,2,3,4,5], vec![1, 2]];
+    let cycles = vec![vec![false], vec![false], vec![false], vec![false, false, false], vec![true]];
+    let retriggers = vec![vec![false], vec![false], vec![false], vec![true, true, true], vec![false]];
+    let prior = vec![vec![1], vec![6], vec![6],vec![0, 5, 5], vec![2]];
 
     SheetData::new(anim_num, length, timing, cycles, retriggers, prior)
 }
+
 
 #[derive(Clone, Copy)]
 pub enum RowOff{
@@ -75,7 +78,6 @@ struct EntityGrid{
     row_sz: usize,
     mid: usize,
     even_right: bool,
-    even_left: bool,
     even_rows: RowOff,
     odd_rows: RowOff,
 }
@@ -86,7 +88,6 @@ impl EntityGrid{
             row_sz,
             mid: row_sz/2,
             even_right: true,
-            even_left: false,
             even_rows: RowOff::Center,
             odd_rows: RowOff::Center,
             
@@ -111,9 +112,9 @@ impl EntityGrid{
     }
     fn first(&self) -> usize{
         for row in self.grid.iter(){
-        for val in row.iter(){
-            if *val > 0{
-                     return *val;
+        for id in row.iter(){
+            if *id > 0{
+                     return *id;
                 }
             }
        }
@@ -123,9 +124,9 @@ impl EntityGrid{
     fn last (&self) -> usize {
         let mut last = 0;
         for row in self.grid.iter(){
-        for val in row.iter(){
-            if *val > 0{
-                last = *val;
+        for id in row.iter(){
+            if *id > 0{
+                last = *id;
             }
        }    
     }
@@ -134,13 +135,23 @@ impl EntityGrid{
     fn count(&self) -> usize{
         let mut count = 0;
         for row in self.grid.iter(){
-            for val in row.iter(){
-                if *val > 0{
+            for id in row.iter(){
+                if *id > 0{
                     count +=1;
                 }
             }
         }
         count
+    }
+
+    fn remove_index (&mut self, rid: usize) -> () {
+        for (i, row) in self.grid.clone().iter().enumerate(){
+            for (j, id) in row.clone().iter().enumerate(){
+                if *id == rid{
+                    self.grid[i][j] = 0;
+                }
+            }
+        }
     }
 
     fn offset (&mut self) -> (){
@@ -190,11 +201,11 @@ impl Graphics{
     pub fn new(world: &World) -> Graphics{
         Graphics{
             draw_state: DrawState::new(
-        std::path::Path::new("src/game_sheet.png"),
+        std::path::Path::new("src/sheet_final.png"),
         sheet_info(),
         Vec2i::new(48, 48),
         std::path::Path::new("src/background.png"),
-        world.entities.as_ref(),
+        Vec::from_iter(world.entities.values()),
         Vec2i::from_tuple(WORLD_SIZE),
     ),
     cutscenes: scenes()
@@ -208,7 +219,7 @@ impl Graphics{
 
 struct World{
     mode: GameMode,
-    entities: Vec<Entity>,
+    entities: HashMap<usize, Entity>,
     enem_grid: EntityGrid,
     score: u8,
     level: usize,
@@ -217,7 +228,7 @@ impl World{
     fn new() -> World{
         let mut world = World{
             mode: GameMode::Title,
-            entities: Vec::new(),
+            entities: HashMap::new(),
             enem_grid: EntityGrid::new(4),
             score: 0,
             level: 0
@@ -235,7 +246,7 @@ impl World{
         is_visible: true}
     };
     player.update_hurtbox();
-    world.entities.push(player);
+    world.entities.push(player.id, player);
     world.gen_enemies(4);
         world
     }
@@ -269,17 +280,36 @@ impl World{
     };
     temp.update_hurtbox();
     //self.enem_grid.add_row(self.entities.len(), &temp);
-    self.entities.push(temp);
+    self.entities.push(temp.id, temp);
 
 
             }
         }
 
-    fn update_pos(&mut self) -> ()
+    fn create_projectile(&mut self, from: &Entity) -> (){
+    let mut temp = Entity{
+        id: self.entities.len(),
+       ent_type: EntityType::Projectile,
+       pos: Vec2::new(from.pos.x + from.size.x as f32, from.pos.y + from.size.y as f32),
+       vel: Vec2::new(0.0, 0.5),
+       acc: Vec2::new(0.0, 1.0),
+       size: Vec2i::new(8,8),
+       hurt_box: HurtBox::new(Vec2i::new(8,8)),
+       texture: Texture{
+           index: 4,
+           is_visible: true
+       },
+    };
+    temp.update_hurtbox();
+    self.entities.push(temp.id, temp);
+
+}
+        fn update_pos(&mut self) -> ()
     {
         for entity in self.entities.iter_mut()
         {
             entity.compute_distance(DT, Vec2i::from_tuple(WORLD_SIZE));
+            entity.update_hurtbox();
         }
     }
 
@@ -394,17 +424,47 @@ impl engine::Game for Game {
                      state.entities[0].change_motion(true, Vec2b::new(true, false), Vec2b::new(false, false));
                 }
                     
-                    state.move_enemies(assets.draw_state.cur_frame);
-                
-                
+                state.move_enemies(assets.draw_state.cur_frame);
                 
                 //shooting at enemies
                 if input.is_key_pressed(VirtualKeyCode::A){
                     assets.draw_state.trigger_animation(&state.entities[0], 0);
+                    state.create_projectile(&state.entities[0].clone());
+                    assets.draw_state.trigger_animation(&state.entities[state.entities.len()-1], 0);
                 }
                 
-
                 state.update_pos();
+                let contacts = engine::collision::contacts(state.entities.clone());
+                let mut remove = Vec::new();
+                for contact in contacts.iter(){
+                    match contact.contact_type{
+                        (EntityType::Player, EntityType::Enemy) |
+                        (EntityType::Enemy, EntityType::Player)=>{
+                        },
+                        (EntityType::Projectile, EntityType::Enemy) =>{
+                            remove.push(contact.collider1);
+                            remove.push(contact.collider2);
+                            state.enem_grid.remove_index(contact.collider2);
+                            assets.draw_state.trigger_animation(&state.entities[contact.collider2], 0);
+                        },
+
+                        (EntityType::Enemy, EntityType::Projectile)=>{
+                            remove.push(contact.collider1);
+                            remove.push(contact.collider2);
+                            state.enem_grid.remove_index(contact.collider1);
+                            assets.draw_state.trigger_animation(&state.entities[contact.collider1], 0);
+                        },
+                        (_,_) =>{}
+                    }
+
+                }
+                remove.reverse();
+                for index in remove.iter(){
+                    
+                    state.entities.remove(*index);
+                }
+
+
             }
             GameMode::Endscene =>{
                 if !assets.cutscenes[2].is_active(){
