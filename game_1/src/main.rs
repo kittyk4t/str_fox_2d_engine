@@ -1,18 +1,14 @@
 use engine::*;
-use engine::animation::*;
-use engine::entity::*;
-use engine::types::*;
-use engine::engine_safe::*;
-use engine::collision::*;
-use std::path::Path;
+//use std::path::Path;
 use std::collections::HashMap;
-use winit::event::{Event, VirtualKeyCode, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event::{VirtualKeyCode};
+//use winit::event_loop::{ControlFlow, EventLoop};
 use rand::{thread_rng, Rng};
 
 
 const WORLD_SIZE: (i32, i32) = (240, 240);
 const DT: f32 = 1.0/30.0;
+
 
 #[derive(Clone, Copy)]
 pub enum GameMode{
@@ -33,7 +29,7 @@ fn scenes() -> Vec<Cutscene>{
     10,10,10,30,10,10,10,
     30,10,5,10];
 
-    let timing3 = vec![10,5,5,5,5,30,
+    let timing3 = vec![30,10,5,5,5,30,
     15,10,10,10,10,10,
     10,15,10,10,10,10,
     15,15,15,10,15,10,
@@ -57,7 +53,7 @@ fn scenes() -> Vec<Cutscene>{
 fn sheet_info() -> SheetData{
     let anim_num = vec![1, 1, 1, 3, 1];
     let length = vec![vec![6], vec![6], vec![6],vec![2, 5, 5], vec![2]];
-    let timing = vec![vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], vec![1,2,3,4,5, 5], 
+    let timing = vec![vec![1,2,3,4,5, 10], vec![1,2,3,4,5, 10], vec![1,2,3,4,5, 10], 
     vec![2, 2], vec![1,2,3,4,5], vec![1,2,3,4,5], vec![1, 2]];
     let cycles = vec![vec![false], vec![false], vec![false], vec![false, false, false], vec![true]];
     let retriggers = vec![vec![false], vec![false], vec![false], vec![true, true, true], vec![false]];
@@ -76,7 +72,6 @@ pub enum RowOff{
 struct EntityGrid{
     grid: Vec<Vec<usize>>,
     row_sz: usize,
-    mid: usize,
     even_right: bool,
     even_rows: RowOff,
     odd_rows: RowOff,
@@ -86,22 +81,22 @@ impl EntityGrid{
         EntityGrid{
             grid: Vec::new(),
             row_sz,
-            mid: row_sz/2,
             even_right: true,
             even_rows: RowOff::Center,
             odd_rows: RowOff::Center,
             
         }
     }
-    fn add_row(&mut self, index_offset: usize, num_entities: usize) -> (){
-        let diff = self.row_sz - num_entities;
+    fn add_row(&mut self, id: Vec<usize>) -> (){
+        let diff = self.row_sz - id.len();
         let mut new = Vec::new();
         let mut added = 0;
+        let mut index = 0;
 
         for i in 0..self.row_sz{
-            if i >= diff && added < num_entities{
-                let index = (i - diff) + index_offset;
-                new.push(index);
+            if i >= diff && added < id.len(){
+                new.push(id[index]);
+                index += 1;
                 added+=1;
             }
             else{
@@ -219,10 +214,10 @@ impl Graphics{
 
 struct World{
     mode: GameMode,
-    entities: HashMap<usize, Entity>,
+    entities: HashMap<usize, engine::entity::Entity>,
     enem_grid: EntityGrid,
+    num_enem: usize,
     score: u8,
-    level: usize,
 }
 impl World{
     fn new() -> World{
@@ -230,30 +225,30 @@ impl World{
             mode: GameMode::Title,
             entities: HashMap::new(),
             enem_grid: EntityGrid::new(4),
+            num_enem: 1,
             score: 0,
-            level: 0
         };
-        let mut player = Entity{
+        let mut player = engine::entity::Entity{
              id: 0,
-    ent_type: EntityType::Player,
+    ent_type: engine::entity::EntityType::Player,
     pos: Vec2::new(WIDTH as f32 / 2.0, 0.0),
     vel: Vec2::new(0.0, 0.0),
     acc: Vec2::new(0.0, 0.0),
     size: Vec2i::new(48,48),
-    hurt_box: HurtBox::new(Vec2i::new(24, 24)),
-    texture: Texture{
+    hurt_box: engine::entity::HurtBox::new(Vec2i::new(24, 24)),
+    texture: engine::entity::Texture{
         index: 3,
         is_visible: true}
     };
     player.update_hurtbox();
-    world.entities.push(player.id, player);
+    world.entities.insert(player.id, player);
     world.gen_enemies(4);
         world
     }
 
     fn gen_enemies(&mut self, num: usize) -> (){
         let mut num = num;
-        let mut temp: Entity;
+        let mut temp: engine::entity::Entity;
         let mut rng = thread_rng();
         let x_pos: f32;
         let y_pos = (WORLD_SIZE.1 - 48) as f32;
@@ -264,49 +259,54 @@ impl World{
 
         x_pos = (WORLD_SIZE.0 as usize - (num * 48)) as f32 / 2.0;
         
-        self.enem_grid.add_row(self.entities.len(), num);
+        let mut ids = Vec::new();
         for i in 0..num{
-            temp = Entity{
-                id: self.entities.len(),
-    ent_type: EntityType::Enemy,
+            temp = engine::entity::Entity{
+                id: self.num_enem + i,
+    ent_type: engine::entity::EntityType::Enemy,
     pos: Vec2::new(x_pos + (i * 48) as f32, y_pos),
     vel: Vec2::new(0.0, 0.0),
     acc: Vec2::new(0.0, 0.0),
     size: Vec2i::new(48,48),
-    hurt_box: HurtBox::new(Vec2i::new(24, 24)),
-    texture: Texture{
+    hurt_box: engine::entity::HurtBox::new(Vec2i::new(36, 36)),
+    texture: engine::entity::Texture{
         index: rng.gen_range(0..3),
         is_visible: true}
     };
     temp.update_hurtbox();
+    ids.push(temp.id);
     //self.enem_grid.add_row(self.entities.len(), &temp);
-    self.entities.push(temp.id, temp);
+    self.entities.insert(temp.id, temp);
 
 
             }
+            self.num_enem+= num;
+            self.enem_grid.add_row(ids);
         }
 
-    fn create_projectile(&mut self, from: &Entity) -> (){
-    let mut temp = Entity{
-        id: self.entities.len(),
-       ent_type: EntityType::Projectile,
+    fn create_projectile(&mut self, from: &engine::entity::Entity) -> usize{
+    let mut temp = engine::entity::Entity{
+        id: self.entities.len() + 100,
+       ent_type: engine::entity::EntityType::Projectile,
        pos: Vec2::new(from.pos.x + from.size.x as f32, from.pos.y + from.size.y as f32),
        vel: Vec2::new(0.0, 0.5),
        acc: Vec2::new(0.0, 1.0),
-       size: Vec2i::new(8,8),
-       hurt_box: HurtBox::new(Vec2i::new(8,8)),
-       texture: Texture{
+       size: Vec2i::new(16,16),
+       hurt_box: engine::entity::HurtBox::new(Vec2i::new(16,16)),
+       texture: engine::entity::Texture{
            index: 4,
            is_visible: true
        },
     };
+    let ret = temp.id;
     temp.update_hurtbox();
-    self.entities.push(temp.id, temp);
+    self.entities.insert(temp.id, temp);
+    ret
 
 }
         fn update_pos(&mut self) -> ()
     {
-        for entity in self.entities.iter_mut()
+        for entity in self.entities.values_mut()
         {
             entity.compute_distance(DT, Vec2i::from_tuple(WORLD_SIZE));
             entity.update_hurtbox();
@@ -318,7 +318,8 @@ impl World{
         if self.enem_grid.count() > 0{
             match (self.enem_grid.even_rows, self.enem_grid.odd_rows){
                 (RowOff::Center, RowOff::Center) =>{
-                     if self.entities[self.enem_grid.last()].pos.y < (WORLD_SIZE.1 - 48) as f32
+
+                     if self.entities.get(&self.enem_grid.last()).unwrap().pos.y < (WORLD_SIZE.1 - 48) as f32
             {
                 let mut rng = thread_rng();
                 self.gen_enemies(rng.gen_range(1..self.enem_grid.row_sz));
@@ -331,11 +332,17 @@ impl World{
            
         }
         if cur_frame % 45 == 0 {
-            if self.entities[self.enem_grid.first()].pos.y > 92.0{
+            if self.entities.get(&self.enem_grid.first()).unwrap().pos.y > 92.0{
             for row in self.enem_grid.grid.iter(){
-                for index in row.iter(){
-                    if *index > 0 && *index < self.entities.len(){
-                        self.entities[*index].pos.y -= 24.0;
+                for id in row.iter(){
+                    if *id > 0 {
+                        match self.entities.get_mut(id){
+                            None => {},
+                            Some(enemy) => {
+                                enemy.pos.y -= 24.0;    
+                            }
+                        }
+                        
                     }
                 }
             }
@@ -344,26 +351,32 @@ impl World{
         if cur_frame % 60 == 0 {
             self.enem_grid.offset();
               for (i, row) in self.enem_grid.grid.iter().enumerate(){
-                for index in row.iter(){
-                    if *index > 0 && *index < self.entities.len(){
-                        
-                        if self.enem_grid.even_right {
+                for id in row.iter(){
+                    if *id > 0 {
+                        match self.entities.get_mut(id) {
+                            None => {},
+                            Some(enemy) =>{
+                                if self.enem_grid.even_right {
                             if i %2 == 0{
-                                self.entities[*index].pos.x += 24.0;
+                                enemy.pos.x += 24.0;
                             }
                             else{
-                                self.entities[*index].pos.x -= 24.0;
+                                enemy.pos.x -= 24.0;
                             }
                         }
                         else {
                             if i %2 == 0{
-                                self.entities[*index].pos.x -= 24.0;
+                                enemy.pos.x -= 24.0;
                             }
                             else{
-                                self.entities[*index].pos.x += 24.0;
+                                enemy.pos.x += 24.0;
                             }
                             
                         }
+
+                            }
+                        }
+                        
                         
                         }
                         
@@ -403,7 +416,7 @@ impl engine::Game for Game {
             {
                 if input.is_key_down(VirtualKeyCode::Space){
                     assets.cutscenes[1].trigger();
-                    state.mode = GameMode::Game;
+                    state.mode = GameMode::Startscene;
                 }
             },
             GameMode::Startscene=> {
@@ -417,53 +430,74 @@ impl engine::Game for Game {
             GameMode::Game =>{
                 //moving player
                 if input.is_key_down(VirtualKeyCode::Right){
-                    state.entities[0].change_motion(false, Vec2b::new(true, true), Vec2b::new(false, false));
+                    state.entities.get_mut(&0).unwrap().change_motion(false, Vec2b::new(true, true), Vec2b::new(false, false));
                 } else if input.is_key_down(VirtualKeyCode::Left){
-                    state.entities[0].change_motion(false, Vec2b::new(true, false), Vec2b::new(false, false));
+                    state.entities.get_mut(&0).unwrap().change_motion(false, Vec2b::new(true, false), Vec2b::new(false, false));
                 }  else{
-                     state.entities[0].change_motion(true, Vec2b::new(true, false), Vec2b::new(false, false));
+                     state.entities.get_mut(&0).unwrap().change_motion(true, Vec2b::new(true, false), Vec2b::new(false, false));
                 }
                     
                 state.move_enemies(assets.draw_state.cur_frame);
                 
                 //shooting at enemies
                 if input.is_key_pressed(VirtualKeyCode::A){
-                    assets.draw_state.trigger_animation(&state.entities[0], 0);
-                    state.create_projectile(&state.entities[0].clone());
-                    assets.draw_state.trigger_animation(&state.entities[state.entities.len()-1], 0);
+                    assets.draw_state.trigger_animation(&state.entities.get(&0).unwrap(), 0);
+                    let p_id = state.create_projectile(&state.entities.get(&0).unwrap().clone());
+                    assets.draw_state.trigger_animation(&state.entities.get(&p_id).unwrap(), 0);
                 }
                 
                 state.update_pos();
-                let contacts = engine::collision::contacts(state.entities.clone());
-                let mut remove = Vec::new();
+                let contacts = engine::collision::contacts(Vec::from_iter(state.entities.values()));
+                
                 for contact in contacts.iter(){
                     match contact.contact_type{
-                        (EntityType::Player, EntityType::Enemy) |
-                        (EntityType::Enemy, EntityType::Player)=>{
+                        (engine::entity::EntityType::Player, engine::entity::EntityType::Enemy) |
+                        (engine::entity::EntityType::Enemy, engine::entity::EntityType::Player)=>{
                         },
-                        (EntityType::Projectile, EntityType::Enemy) =>{
-                            remove.push(contact.collider1);
-                            remove.push(contact.collider2);
+                        (engine::entity::EntityType::Projectile, engine::entity::EntityType::Enemy) =>{
+                            
+                            match state.entities.get(&contact.collider2){
+                                None => {},
+                                Some(enemy) => {
+                                    assets.draw_state.trigger_animation(enemy, 0);
+                                    assets.draw_state.anim_entities.remove(&contact.collider1);
+                                }
+                            }
                             state.enem_grid.remove_index(contact.collider2);
-                            assets.draw_state.trigger_animation(&state.entities[contact.collider2], 0);
+                            state.entities.remove(&contact.collider1);
+                            state.entities.remove(&contact.collider2);
+                            state.score +=10;
+                            
                         },
 
-                        (EntityType::Enemy, EntityType::Projectile)=>{
-                            remove.push(contact.collider1);
-                            remove.push(contact.collider2);
+                        (engine::entity::EntityType::Enemy, engine::entity::EntityType::Projectile)=>{
+
+                            match state.entities.get(&contact.collider1){
+                                None => {},
+                                Some(enemy) => {
+                                    assets.draw_state.trigger_animation(enemy, 0);
+                                    assets.draw_state.anim_entities.remove(&contact.collider2);
+                                }
+                            }
                             state.enem_grid.remove_index(contact.collider1);
-                            assets.draw_state.trigger_animation(&state.entities[contact.collider1], 0);
+                            state.entities.remove(&contact.collider1);
+                            state.entities.remove(&contact.collider2);
+                            state.score +=10;
                         },
                         (_,_) =>{}
                     }
-
-                }
-                remove.reverse();
-                for index in remove.iter(){
+                   
+                    print!("score: ");
+                    println!("{}", state.score);
+                    assets.draw_state.tidy(Vec::from_iter(state.entities.keys()));
                     
-                    state.entities.remove(*index);
-                }
+                    if state.score >= 10{
+                        assets.cutscenes[2].trigger();
+                        state.mode = GameMode::Endscene;
+                    }
+                    
 
+                }
 
             }
             GameMode::Endscene =>{
@@ -489,7 +523,7 @@ impl engine::Game for Game {
                 assets.cutscenes[1].load_buffer(fb2d);
             },
             GameMode::Game => {
-                assets.draw_state.load_buffer(&state.entities, fb2d);
+                assets.draw_state.load_buffer(Vec::from_iter(state.entities.values()), fb2d);
             },
             GameMode::Endscene => {
                 assets.cutscenes[2].load_buffer(fb2d);

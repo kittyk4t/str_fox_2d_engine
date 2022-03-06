@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use super::types::*; 
 use super::image::*;
 use super::entity::*;
-use super::engine_safe::*;
 
 #[derive(Clone)]
 pub struct SheetData{
@@ -250,7 +249,7 @@ impl AnimQueue {
     fn push(&mut self, p:f32, anim:AnimationState, pause:bool, retrigger:bool) {
         // If this is a retrigger, replace the old animation (if any)
         // otherwise, leave the old animation alone!
-        let to_insert = if let Some(found_pos) = self.queue.iter().position(|(qp, qanim, _)| qanim.animation.id == anim.animation.id) {
+        /*let to_insert = if let Some(found_pos) = self.queue.iter().position(|(_qp, qanim, _)| qanim.animation.id == anim.animation.id) {
             let (_qp, qanim, _qpause) = self.queue.remove(found_pos);
             if retrigger {
                 //HAVE SOMEONE LOOK AT THIS
@@ -262,7 +261,7 @@ impl AnimQueue {
         } else {
             //HAVE SOMEONE LOOK AT THIS
             (p, anim.clone(), pause)
-        };
+        };*/
         // put highest priority thing at end
         let pos = self.queue.iter().rposition(|(qp, _, _)| qp < &p).map(|n| n+1).unwrap_or(0);
         self.queue.insert(pos, (p, anim, pause));
@@ -387,7 +386,7 @@ impl AnimationEntity{
         
         AnimationEntity{sprite, states, pos, size} }
 
-    pub fn to_Rect(&self) -> Rect {
+    pub fn to_rect(&self) -> Rect {
         let image = self.pose();
         
         Rect::new(Vec2i::new(0,0), image.sz)
@@ -400,7 +399,7 @@ impl AnimationEntity{
             None => {
                 self.sprite.animations[self.sprite.default_animation].pose[0].clone()
             },
-            Some(index) =>{
+            Some(_index) =>{
                 self.sprite.animations[0].pose[self.states.current_frame().unwrap()].clone()
             }
         }
@@ -430,18 +429,23 @@ pub struct DrawState{
     pub sprite_sheet: SpriteSheet, //sprite sheet
     pub cur_frame: usize, //current frame
     pub anim_entities: HashMap<usize, AnimationEntity>,
+    pub last_triggered: usize,
+    pub tidy_interval: usize,
 }
 
 impl DrawState{
     
     pub fn new(sheet: &std::path::Path, sheet_data: SheetData, 
-        pose_sz: Vec2i, background: &std::path::Path, entities: Vec<Entity>, size: Vec2i)-> DrawState {
+        pose_sz: Vec2i, background: &std::path::Path, entities: Vec<&Entity>, size: Vec2i)-> DrawState {
         let mut state = DrawState{
         tb_render: Image::new(size),
         background: Image::from_file(background),
-        sprite_sheet: DrawState::load_sheet(sheet, sheet_data, pose_sz),
+        sprite_sheet: DrawState::load_sheet(sheet, sheet_data.clone(), pose_sz),
         cur_frame: 0,
-        anim_entities: HashMap::new()};
+        anim_entities: HashMap::new(),
+        last_triggered: 0,
+        tidy_interval: DrawState::tidy_interval(sheet_data.timings),
+    };
         state.init_anim_enitities(entities);
         state
     }
@@ -456,7 +460,7 @@ impl DrawState{
         sheet
     }
 
-    fn init_anim_enitities(&mut self, entities: Vec<Entity>) -> (){
+    fn init_anim_enitities(&mut self, entities: Vec<&Entity>) -> (){
         for entity in entities.iter()
         {
             self.anim_entities.insert(entity.id, AnimationEntity::new(
@@ -469,7 +473,7 @@ impl DrawState{
         
     }
 
-    fn sync_entity(&mut self, entities: &Vec<Entity>)-> (){
+    fn sync_entity(&mut self, entities: Vec<&Entity>)-> (){
         //remove anim_entites whose entities are gone?
         for entity in entities.iter(){
             match self.anim_entities.get_mut(&entity.id){
@@ -487,6 +491,32 @@ impl DrawState{
         }
     }
 
+    fn tidy_interval(timings: Vec<Vec<usize>>) -> usize{
+        let mut interval = 0;
+        for animation in timings.iter(){
+            for time in animation.iter(){
+                interval += time;
+            }
+        }
+        interval + 5
+    }
+
+    fn is_in (val: usize, list: Vec<&usize>) -> bool{
+        for i in list.iter(){
+            if **i == val{
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn tidy (&mut self, keys: Vec<&usize>) -> (){
+        if self.cur_frame >= self.last_triggered + self.tidy_interval{
+            self.anim_entities.retain(|&k, _| DrawState::is_in(k, keys.clone()));
+        }
+
+    }
+
     //resets tb_render to background
     fn reset(&mut self) -> (){
         self.tb_render.clear(Color::new(0,0,0,255));
@@ -495,6 +525,7 @@ impl DrawState{
     }
 
     pub fn trigger_animation(&mut self, entity: &Entity, anim_id: usize)-> (){
+        self.last_triggered = self.cur_frame;
         match self.anim_entities.get_mut(&entity.id){
             None => {
                 let mut new = AnimationEntity::new(
@@ -514,19 +545,19 @@ impl DrawState{
     }
     
     //returns a clone of the draw state
-    pub fn incr_frame(&mut self, entities: &Vec<Entity>) -> (){
+    pub fn incr_frame(&mut self, entities: Vec<&Entity>) -> (){
         self.sync_entity(entities);
         self.reset();
 
         //will need to check syntax
         for (_entity, anim_entity) in self.anim_entities.iter_mut(){
-            self.tb_render.bitblt(&anim_entity.pose(), anim_entity.to_Rect(), anim_entity.pos.to_Vec2i());
+            self.tb_render.bitblt(&anim_entity.pose(), anim_entity.to_rect(), anim_entity.pos.to_vec2i());
             anim_entity.tick(self.cur_frame);
         }
         self.cur_frame += 1;
     }
 
-    pub fn load_buffer(&mut self, entities: &Vec<Entity>, fb2d:  &mut Image) -> ()
+    pub fn load_buffer(&mut self, entities: Vec<&Entity>, fb2d:  &mut Image) -> ()
     {
         self.incr_frame(entities);
         let rect = Rect{pos:Vec2i::new(0,0), sz: self.tb_render.sz};

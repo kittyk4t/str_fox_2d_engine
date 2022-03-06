@@ -11,7 +11,7 @@ impl Vec2 {
         Vec2 { x, y }
     }
 
-    pub fn to_Vec2i(self) -> Vec2i {Vec2i{x: self.x as i32, y:self.y as i32}}
+    pub fn to_vec2i(self) -> Vec2i {Vec2i{x: self.x as i32, y:self.y as i32}}
 }
 
 //this is bad if hash were to just be used on Vec2...
@@ -19,7 +19,7 @@ impl Vec2 {
 //ask how to make this suck less
 impl Hash for Vec2 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let vec = self.to_Vec2i();
+        let vec = self.to_vec2i();
         vec.hash(state);
     }
 }

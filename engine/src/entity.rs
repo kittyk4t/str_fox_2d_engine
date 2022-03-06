@@ -72,7 +72,6 @@ abstract on collision method
 */
 
 use super::types::*;
-use super::collision::*;
 use std::hash::{Hash};
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
@@ -87,7 +86,7 @@ pub enum DisplayType {
     Lives,
     TextBox,
 }
-#[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub enum EntityType {
     Player,
     Enemy,
@@ -115,8 +114,8 @@ impl HurtBox{
         size: size,
     }}
     pub fn touching(&self, other: HurtBox)  -> bool{
-        let this_rect = Rect::new(self.pos.to_Vec2i(), self.size);
-        let other_rect = Rect::new(other.pos.to_Vec2i(), other.size);
+        let this_rect = Rect::new(self.pos.to_vec2i(), self.size);
+        let other_rect = Rect::new(other.pos.to_vec2i(), other.size);
         
        super::collision::rect_touching(this_rect, other_rect)
     }

@@ -72,6 +72,7 @@ pub fn check_collisions(entities: Vec<entity::Entity>){
 use super::types::*;
 use super::entity::*;
 
+#[derive(Debug, Clone)]
 pub struct Contact{
     pub contact_type: (EntityType, EntityType),
     pub collider1: usize,
@@ -102,16 +103,25 @@ fn rect_displacement(r1:Rect, r2:Rect) -> Option<(i32,i32)> {
     }
 }
 
-pub fn contacts(colliders: Vec<Entity>) -> Vec<Contact>{
+pub fn contacts(colliders: Vec<&Entity>) -> Vec<Contact>{
     let mut contacts = vec![];
 for (i, body_i) in colliders.iter().enumerate() {
-    for (j, body_j) in colliders.iter().enumerate().skip(i+1) {
+    for (_j, body_j) in colliders.iter().enumerate().skip(i+1) {
         if body_i.collided(body_j){
-            contacts.push(Contact{
+            match (body_i.ent_type, body_j.ent_type){
+                (EntityType::Player, EntityType::Enemy) |
+                        (EntityType::Enemy, EntityType::Player)| (EntityType::Projectile, EntityType::Enemy)
+                         |(EntityType::Enemy, EntityType::Projectile)=>{
+                             contacts.push(Contact{
                 contact_type: (body_i.ent_type, body_j.ent_type),
-                collider1: i,
-                collider2: j,
+                collider1: body_i.id,
+                collider2: body_j.id,
             })
+                            
+                            },
+                            _ => {}
+
+            }
 
         }
     }
