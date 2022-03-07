@@ -297,8 +297,8 @@ impl World {
                 from.pos.x + from.size.x as f32,
                 from.pos.y + from.size.y as f32,
             ),
-            vel: Vec2::new(0.0, 0.5),
-            acc: Vec2::new(0.0, 1.0),
+            vel: Vec2::new(0.0, 1.0),
+            acc: Vec2::new(0.0, 5.0),
             size: Vec2i::new(16, 16),
             hurt_box: engine::entity::HurtBox::new(Vec2i::new(16, 16)),
             texture: engine::entity::Texture {
@@ -333,7 +333,7 @@ impl World {
             }
         }
         if cur_frame % 45 == 0 {
-            if self.entities.get(&self.enem_grid.first()).unwrap().pos.y > 92.0 {
+            if self.entities.get(&self.enem_grid.first()).unwrap().pos.y > 24.0 {
                 for row in self.enem_grid.grid.iter() {
                     for id in row.iter() {
                         if *id > 0 {
@@ -402,6 +402,11 @@ impl engine::Game for Game {
                 }
             }
             GameMode::Startscene => {
+                if input.is_key_pressed(VirtualKeyCode::Space) {
+                    state.mode = GameMode::Game;
+                    let index = assets.cutscenes[1].last_plate();
+                    assets.cutscenes[1].set_plate(index);
+                }
                 if !assets.cutscenes[1].is_active() {
                     let index = assets.cutscenes[1].last_plate();
                     assets.cutscenes[1].set_plate(index);
@@ -449,9 +454,23 @@ impl engine::Game for Game {
 
                 for contact in contacts.iter() {
                     match contact.contact_type {
-                        (engine::entity::EntityType::Player, engine::entity::EntityType::Enemy)
-                        | (engine::entity::EntityType::Enemy, engine::entity::EntityType::Player) =>
-                            {}
+                        (engine::entity::EntityType::Player, engine::entity::EntityType::Enemy) => {
+                            assets
+                                .draw_state
+                                .trigger_animation(&state.entities.get(&0).unwrap(), 1);
+                            assets.draw_state.anim_entities.remove(&contact.collider2);
+                            state.enem_grid.remove_index(contact.collider2);
+                            state.entities.remove(&contact.collider2);
+                        }
+
+                        (engine::entity::EntityType::Enemy, engine::entity::EntityType::Player) => {
+                            assets
+                                .draw_state
+                                .trigger_animation(&state.entities.get(&0).unwrap(), 2);
+                            assets.draw_state.anim_entities.remove(&contact.collider1);
+                            state.enem_grid.remove_index(contact.collider1);
+                            state.entities.remove(&contact.collider1);
+                        }
                         (
                             engine::entity::EntityType::Projectile,
                             engine::entity::EntityType::Enemy,
@@ -494,7 +513,7 @@ impl engine::Game for Game {
                         .draw_state
                         .tidy(Vec::from_iter(state.entities.keys()));
 
-                    if state.score >= 10 {
+                    if state.score >= 100 {
                         assets.cutscenes[2].trigger();
                         state.mode = GameMode::Endscene;
                     }

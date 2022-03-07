@@ -352,7 +352,7 @@ impl SpriteSheet{
                 pos.x = 0;
                 pos.y += pose_size.y;
                 assert_eq!(temp_poses.len(), data.timings[time_i].len());
-                let temp_anim = Animation::new_all(*val, temp_poses.clone(),
+                let temp_anim = Animation::new_all(j, temp_poses.clone(),
                  data.priorities[i][j], data.timings[time_i].clone(), data.cycles[i][j], 
                  data.retriggers[i][j]);
                 time_i += 1;
@@ -399,8 +399,8 @@ impl AnimationEntity{
             None => {
                 self.sprite.animations[self.sprite.default_animation].pose[0].clone()
             },
-            Some(_index) =>{
-                self.sprite.animations[0].pose[self.states.current_frame().unwrap()].clone()
+            Some(index) =>{
+                self.sprite.animations[index].pose[self.states.current_frame().unwrap()].clone()
             }
         }
         
@@ -546,11 +546,11 @@ impl DrawState{
     
     //returns a clone of the draw state
     pub fn incr_frame(&mut self, entities: Vec<&Entity>) -> (){
-        self.sync_entity(entities);
+        self.sync_entity(entities.clone());
         self.reset();
 
         //will need to check syntax
-        for (_entity, anim_entity) in self.anim_entities.iter_mut(){
+        for (entity, anim_entity) in self.anim_entities.iter_mut(){
             self.tb_render.bitblt(&anim_entity.pose(), anim_entity.to_rect(), anim_entity.pos.to_vec2i());
             anim_entity.tick(self.cur_frame);
         }
