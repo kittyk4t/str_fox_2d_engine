@@ -162,9 +162,14 @@ impl Cutscene{
 
             if self.cur_plate >= self.plates.len()
             {
-                self.cur_plate = 0;
-
                 self.is_active = self.cycle;
+
+                if self.is_active(){
+                    self.cur_plate = 0;
+                }
+                else{
+                    self.cur_plate = self.plates.len() -1;
+                }
             }
         }
     }

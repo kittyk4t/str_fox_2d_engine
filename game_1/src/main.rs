@@ -268,7 +268,7 @@ impl World {
         let mut ids = Vec::new();
         for i in 0..num {
             temp = engine::entity::Entity {
-                id: self.num_enem + i,
+                id: self.num_enem,
                 ent_type: engine::entity::EntityType::Enemy,
                 pos: Vec2::new(x_pos + (i * 48) as f32, y_pos),
                 vel: Vec2::new(0.0, 0.0),
@@ -284,8 +284,9 @@ impl World {
             ids.push(temp.id);
             //self.enem_grid.add_row(self.entities.len(), &temp);
             self.entities.insert(temp.id, temp);
+            self.num_enem +=1;
         }
-        self.num_enem += num;
+        
         self.enem_grid.add_row(ids);
     }
 
@@ -337,11 +338,9 @@ impl World {
                 for row in self.enem_grid.grid.iter() {
                     for id in row.iter() {
                         if *id > 0 {
-                            match self.entities.get_mut(id) {
-                                None => {}
-                                Some(enemy) => {
+                            if let Some(enemy) = self.entities.get_mut(id) {
                                     enemy.pos.y -= 24.0;
-                                }
+                                
                             }
                         }
                     }
@@ -353,10 +352,8 @@ impl World {
             for (i, row) in self.enem_grid.grid.iter().enumerate() {
                 for id in row.iter() {
                     if *id > 0 {
-                        match self.entities.get_mut(id) {
-                            None => {}
-                            Some(enemy) => {
-                                if self.enem_grid.even_right {
+                        if let Some(enemy) = self.entities.get_mut(id) {
+                             if self.enem_grid.even_right {
                                     if i % 2 == 0 {
                                         enemy.pos.x += 24.0;
                                     } else {
@@ -369,8 +366,8 @@ impl World {
                                         enemy.pos.x += 24.0;
                                     }
                                 }
-                            }
-                        }
+
+                        } 
                     }
                 }
             }
@@ -408,9 +405,7 @@ impl engine::Game for Game {
                     assets.cutscenes[1].set_plate(index);
                 }
                 if !assets.cutscenes[1].is_active() {
-                    let index = assets.cutscenes[1].last_plate();
-                    assets.cutscenes[1].set_plate(index);
-
+                    
                     state.mode = GameMode::Game;
                 }
             }
@@ -475,12 +470,10 @@ impl engine::Game for Game {
                             engine::entity::EntityType::Projectile,
                             engine::entity::EntityType::Enemy,
                         ) => {
-                            match state.entities.get(&contact.collider2) {
-                                None => {}
-                                Some(enemy) => {
+                            if let Some(enemy) = state.entities.get(&contact.collider2) {
                                     assets.draw_state.trigger_animation(enemy, 0);
                                     assets.draw_state.anim_entities.remove(&contact.collider1);
-                                }
+                                
                             }
                             state.enem_grid.remove_index(contact.collider2);
                             state.entities.remove(&contact.collider1);
@@ -492,12 +485,10 @@ impl engine::Game for Game {
                             engine::entity::EntityType::Enemy,
                             engine::entity::EntityType::Projectile,
                         ) => {
-                            match state.entities.get(&contact.collider1) {
-                                None => {}
-                                Some(enemy) => {
+                            if let Some(enemy) = state.entities.get(&contact.collider1) {
                                     assets.draw_state.trigger_animation(enemy, 0);
                                     assets.draw_state.anim_entities.remove(&contact.collider2);
-                                }
+                                
                             }
                             state.enem_grid.remove_index(contact.collider1);
                             state.entities.remove(&contact.collider1);
@@ -520,10 +511,7 @@ impl engine::Game for Game {
                 }
             }
             GameMode::Endscene => {
-                if !assets.cutscenes[2].is_active() {
-                    let index = assets.cutscenes[2].last_plate();
-                    assets.cutscenes[2].set_plate(index);
-                }
+                
             }
         }
 
